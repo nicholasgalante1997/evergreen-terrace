@@ -1,0 +1,4 @@
+# @see <https://mise.jdx.dev/>
+
+[tools]
+bun = { os = "macos", version = "system" }

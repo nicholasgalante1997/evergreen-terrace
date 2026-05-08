@@ -1,0 +1,40 @@
+{
+  "name": "@evergreen-terrace/root",
+  "version": "0.1.0",
+  "description": "Personal engineering org — agent team, work queue, and momentum sentinel",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.3.13"
+  },
+  "packageManager": "bun@1.3.13",
+  "workspaces": [
+    "core/*",
+    "docsite",
+    "packages/*",
+    "internal/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
+    "queue": "bun run core/queue-server/dist/index.js",
+    "metrics": "bun run core/metrics/dist/index.js",
+    "tui": "bun run core/tui/dist/index.js",
+    "sentinel": "bun run core/sentinel/dist/index.js",
+    "conductor": "bun run core/conductor/dist/index.js"
+  },
+  "dependencies": {
+    "@cde/hiro": "0.2.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.6",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.0.0"
+  }
+}

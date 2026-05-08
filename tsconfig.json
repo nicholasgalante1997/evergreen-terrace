@@ -1,0 +1,3 @@
+{
+  "extends": "@evergreen-terrace/config/typescript/base.tsconfig.json"
+}

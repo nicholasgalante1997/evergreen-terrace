@@ -1,0 +1,25 @@
+node_modules/
+.env
+*.local
+
+# Build outputs
+dist/
+**/dist/
+out/
+**/out/
+
+# Old pre-build artifacts (packages/common/lib/)
+packages/common/lib/
+
+# Rust build artifacts
+**/target/
+**/gen/
+
+# Queue active items (runtime state, not source)
+queue/active/*.toml
+
+# Turbo cache
+.turbo/
+
+# macOS
+.DS_Store
