@@ -1,0 +1,63 @@
+---
+title: Introduction
+---
+
+# evergreen-terrace
+
+A personal engineering org for a one-person shop operating at principal scope.
+
+The bottleneck isn't access or management — it's team support. evergreen-terrace provides the PM, design, and engineering team that should exist but doesn't. Role-scoped agents handle the work that would otherwise fall to a full team. A persistent work queue tracks everything. A momentum sentinel surfaces what's going stale before it becomes a problem.
+
+## What It Is
+
+evergreen-terrace is a Bun/TypeScript Turbo monorepo containing:
+
+- **A work queue** — TOML-backed, served over HTTP, with a terminal dashboard and a web dashboard
+- **A metrics service** — append-only event log, velocity charts, project health history
+- **A sentinel cron runner** — scheduled or on-demand project health scoring with written reports
+- **A conductor** — Gastown-inspired parallel agent orchestrator (Mayor/Polecat/Refinery/Witness)
+- **A native desktop app** — Tauri v2 macOS wrapper with system tray and offline reads
+- **An agent team** — role-scoped Kiro agents covering PM, engineering, voice, stakeholder, and director functions
+- **A skill library** — shared knowledge bases that agents pull from on demand
+- **Integration configs** — Jira, GitLab, and Figma MCP wrappers
+
+## The Problem It Solves
+
+A principal-level engineer operating without team support spends 60–70% of their time on work that should be delegated: ticket grooming, design specs, PR descriptions, stakeholder updates, status emails. That's not a skills gap. That's a staffing gap.
+
+evergreen-terrace addresses it by making the engineer the only human in the loop — but only at the decision gates that actually require human judgment:
+
+1. Is this the right thing to build? *(PM gate)*
+2. Is this the right architecture? *(Tech Lead gate)*
+3. Is this good enough to ship? *(QA gate)*
+
+## Service Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| queue-server | 2727 | Work queue REST API |
+| web dashboard | 2728 | Vite/React dashboard |
+| metrics | 2729 | Event log and analytics |
+| sentinel | 2730 | Cron runner and report server |
+| conductor | 2731 | Parallel orchestrator |
+
+## Projects Under Management
+
+| Project | Description | Phase |
+|---------|-------------|-------|
+| `springfield` | Code intelligence platform for agent-os | Active feature |
+| `fidget-tokens` | Fidget/Kite design system token library | Maintenance |
+| `adaptive-spirit` | React/Webpack application | Maintenance |
+| `spectrum-ga-map` | Vite/React/Bun application | Maintenance |
+
+## Quick Links
+
+- [Getting Started](/getting-started) — clone, configure, run
+- [Architecture](/architecture) — monorepo structure and design decisions
+- [Work Queue](/queue) — queue server, data model, and dashboards
+- [Metrics](/metrics) — event collection and analytics
+- [Sentinel](/sentinel) — cron runner and health reports
+- [Conductor](/conductor) — parallel agent orchestration
+- [Desktop App](/desktop) — native macOS wrapper
+- [Agent Team](/agents) — full agent reference
+- [Roadmap](/phases) — what's built, what's next

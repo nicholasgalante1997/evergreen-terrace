@@ -1,0 +1,73 @@
+---
+title: Desktop App
+---
+
+# Desktop App
+
+Native macOS app wrapping the `core/web` React dashboard. No new React code — same web dashboard, native shell. Adds system tray, native notifications, and offline-capable local file reads via Tauri commands.
+
+## Tech Stack
+
+- **Tauri v2** — Rust backend + WebView frontend
+- **Frontend** — the existing `core/web` Vite app loaded as the WebView
+- **Rust** — system tray, notifications, Tauri commands for local TOML reads
+
+## Development
+
+Start the web dashboard first, then open the native window:
+
+```sh
+# Terminal 1 — web dashboard dev server
+cd core/web && bun run dev
+
+# Terminal 2 — native app
+cd core/desktop && bun run dev
+```
+
+## Production Build
+
+```sh
+cd core/desktop && bun run build
+```
+
+Produces a `.app` bundle in `src-tauri/target/release/bundle/macos/`. The Vite output from `core/web` is bundled into the app — no external server needed for the UI.
+
+> **Note:** Run `bun run build` from the repo root first to ensure `core/web/dist/` is up to date before building the desktop app.
+
+## System Tray
+
+- Menu bar icon showing inbox item count (updated every 30 seconds)
+- Menu: "Open evergreen-terrace", "Queue: N items" (display), "Quit"
+- Clicking the icon opens or focuses the main window
+
+## Native Notifications
+
+Fires when:
+- A new `p0` item enters the inbox
+- A sentinel run completes with a stale project (score < 50)
+
+## Offline Mode
+
+The app can read local queue state without the queue server running via Tauri commands:
+
+```ts
+// Available in the WebView via @tauri-apps/api
+import { invoke } from "@tauri-apps/api/core";
+
+const inbox = await invoke("read_queue_inbox", { queueRoot: "/path/to/repo" });
+const global = await invoke("read_context_global", { queueRoot: "/path/to/repo" });
+```
+
+## Icons
+
+Icons are generated from `src-tauri/icons/icon.png` using:
+
+```sh
+cd core/desktop && bun run tauri icon src-tauri/icons/icon.png
+```
+
+Replace `icon.png` with a 1024×1024 source image to customize the app icon.
+
+## Bundle Identifier
+
+`com.evergreen-terrace.desktop` — configured in `src-tauri/tauri.conf.json`.

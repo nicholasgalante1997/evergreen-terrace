@@ -1,0 +1,128 @@
+---
+title: Work Queue
+---
+
+# Work Queue
+
+The work queue is the operational backbone of evergreen-terrace. It tracks every piece of work — from rough ideas to in-flight agent tasks — as TOML files on disk, served over a lightweight HTTP API.
+
+## Data Model
+
+Each work item is a TOML file with three sections:
+
+```toml
+[item]
+id = "abc-001"                          # UUID or human-readable slug
+title = "Add dark mode to web dashboard"
+project = "evergreen-terrace"           # Must match a context/projects/ entry
+type = "feature"                        # feature | bug | research | design | pm | ops
+priority = "p1"                         # p0 | p1 | p2 | p3
+created = "2026-05-08T09:00:00.000Z"   # ISO datetime
+source = "manual"                       # manual | sentinel | jira | gitlab
+
+[delegation]
+agent = ""                              # Which agent is handling this (empty = unassigned)
+delegated_at = ""                       # ISO datetime when delegation occurred
+
+[context]
+description = "The web dashboard currently has no dark mode..."
+acceptance = "Dark mode toggle works, persists across sessions, matches system preference by default."
+links = []                              # Relevant URLs or file paths
+```
+
+### Priority Levels
+
+| Priority | Meaning |
+|----------|---------|
+| `p0` | Drop everything. Blocking or production-impacting. |
+| `p1` | High. Should be addressed this sprint. |
+| `p2` | Medium. Scheduled work. |
+| `p3` | Low. Nice to have, or explicitly deprioritized. |
+
+### Item Types
+
+| Type | Used For |
+|------|---------|
+| `feature` | New functionality |
+| `bug` | Defect or regression |
+| `research` | Investigation, spike, or discovery |
+| `design` | Design work, spec, or Figma deliverable |
+| `pm` | Product management work (PRD, backlog grooming) |
+| `ops` | Infrastructure, tooling, or process work |
+
+## Queue Server
+
+The queue server (`core/queue-server`) is a Bun HTTP server that reads and writes the TOML files in `queue/inbox/` and `queue/active/`.
+
+### Path Resolution
+
+The server resolves queue paths from `process.env.QUEUE_ROOT` with a fallback to `process.cwd()`. Set `QUEUE_ROOT` to the repo root in your `.env`:
+
+```sh
+QUEUE_ROOT=/Users/you/dev/evergreen-terrace
+```
+
+### API Reference
+
+**`GET /queue`**
+
+Returns the full queue state.
+
+```json
+{
+  "inbox": [...],
+  "active": [...]
+}
+```
+
+**`GET /queue/inbox`**
+
+Returns pending items only.
+
+**`GET /queue/active`**
+
+Returns in-flight items only.
+
+**`POST /queue/delegate`**
+
+Moves an item from inbox to active and assigns an agent.
+
+```json
+{
+  "id": "abc-001",
+  "agent": "eng-mid"
+}
+```
+
+Returns `{ "ok": true }` on success, `404` if the item isn't found in inbox.
+
+## Dashboards
+
+### Terminal Dashboard (TUI)
+
+```sh
+bun run tui
+```
+
+Renders inbox and active sections sorted by priority with ANSI color coding. Press `r` to refresh, `q` to quit.
+
+Priority colors: `p0` red · `p1` yellow · `p2` cyan · `p3` gray
+
+### Web Dashboard
+
+```sh
+cd core/dashboard/web && bun run dev
+```
+
+Opens at `http://localhost:2728`. Polls the queue server every 30 seconds. Refresh button for on-demand updates.
+
+## Inbox Management
+
+Items enter the inbox from four sources:
+
+- **Manual** — TOML files dropped directly into `queue/inbox/`
+- **PM agent** — Creates items from PRDs and stakeholder asks
+- **Sentinel** — Surfaces stale projects as actionable items (planned)
+- **Jira / GitLab** — Synced via MCP integrations (planned)
+
+Items move to `queue/active/` when delegated via `POST /queue/delegate`. The file is moved atomically — the inbox file is deleted after the active file is written.

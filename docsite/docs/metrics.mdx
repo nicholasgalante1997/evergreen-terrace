@@ -1,0 +1,70 @@
+---
+title: Metrics
+---
+
+# Metrics
+
+Append-only event collection service. Records queue operations and sentinel runs, persists them to `context/metrics/`, and exposes a read API for the web dashboard.
+
+## Running
+
+```sh
+bun run metrics
+```
+
+Starts on `http://localhost:2729`.
+
+## Persistence
+
+Events are appended to TOML files in `context/metrics/`:
+
+```
+context/metrics/
+├── queue.toml      # Queue throughput events (created, delegated, completed)
+└── sentinel.toml   # Sentinel run history with per-project scores
+```
+
+The files are append-only — never overwritten. Safe to read while the service is running.
+
+## API Reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/metrics/queue` | All queue events |
+| `GET` | `/metrics/queue/velocity` | Items created/delegated/completed per day (last 30 days) |
+| `GET` | `/metrics/sentinel` | All sentinel runs |
+| `GET` | `/metrics/sentinel/history` | Score history per project (last 10 runs) |
+
+### Velocity response
+
+```ts
+interface VelocityPoint {
+  date: string;       // YYYY-MM-DD
+  created: number;
+  delegated: number;
+  completed: number;
+}
+```
+
+### Sentinel history response
+
+```ts
+interface SentinelHistory {
+  project: string;
+  runs: Array<{ ts: string; score: number }>;
+}
+```
+
+## Integration with Queue Server
+
+The queue server fires `POST /metrics/event` after each state-changing operation (item created, delegated). Fire-and-forget — the queue server does not wait for a response and continues normally if the metrics service is unreachable.
+
+## Web Dashboard
+
+The web dashboard's Metrics tab reads from this service. The Vite proxy routes `/metrics/*` to port 2729 in development. In production, deploy both services behind the same origin.
+
+## Environment
+
+```sh
+QUEUE_ROOT=/path/to/evergreen-terrace   # Same as queue-server
+```

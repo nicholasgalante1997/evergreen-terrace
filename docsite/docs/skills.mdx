@@ -1,0 +1,104 @@
+---
+title: Skills
+---
+
+# Skills
+
+Skills are shared knowledge bases that agents pull from on demand. They live in `skills/` and are referenced in agent definitions. A skill is a `SKILL.md` file — structured documentation that an agent reads before acting in a specific domain.
+
+## `nick-voice`
+
+**Path:** `skills/nick-voice/SKILL.md`
+
+The voice model for Nick's written register. Built from writing samples across emails, Webex messages, technical blog posts, and workplace communication.
+
+Covers:
+- Sentence structure and rhythm
+- Register and code-switching across contexts
+- How to state opinions directly
+- Technical explanation patterns
+- What to strip from AI-generated output (filler phrases, passive voice, over-structured responses)
+- Format rules by context type
+- Transformation examples with before/after
+
+Used by: `voice`, `pm`, `stakeholder`
+
+---
+
+## `nick-conventions`
+
+**Path:** `skills/nick-conventions/SKILL.md`
+
+Code conventions and patterns observed across Nick's active projects. Workers pull from this to ensure generated code matches the existing codebase style.
+
+Covers:
+- Runtime and tooling (Bun-first, pnpm for fidget-tokens, Turbo)
+- TypeScript conventions (interfaces vs types, naming, imports, error handling, async)
+- React conventions (functional components, `React.memo`, state management, styling)
+- CLI conventions (Springfield pattern: `commander`/`cac`, `inquirer`, `chalk`)
+- File and directory structure (`lib/`, `src/`, `bin/`, `out/`)
+- Testing (Jest for Springfield, Vitest for newer projects, Playwright for E2E)
+- What to avoid (`any`, default exports for utilities, inline styles, `console.log` in commits)
+
+Used by: `eng-senior`, `eng-mid`, `eng-junior`, `pm`
+
+---
+
+## `springfield-context`
+
+**Path:** `skills/springfield-context/SKILL.md`
+
+Deep context for the Springfield code intelligence platform. Read before any task touching `agent-tools-prototype-workspace`.
+
+Covers:
+- What Springfield is and what it analyzes
+- Full package ecosystem (`@springfield-models`, `@springfield-processes`, `@springfield-types`, `@springfield-constants`, `@springfield-utils`, `@springfield-state`, `@springfield-configs`)
+- Core applications with ports (CLI, API, DB, dump, docsify, MCP, web)
+- Data pipeline phases and commands (`duff-exec setup:clone`, `graph:json`, `react:json`, `fidget:json`, `graph:aggregate`)
+- Web application architecture (React 19, Webpack, MUI, D3, Zustand, TanStack Query, GraphQL)
+- Component and page patterns (Component/View split, `React.memo`, `pipeline` HOC, path aliases)
+- CLI architecture (`commands/`, `workers/`, `sqlite3/`, `prompts/`)
+- MCP server structure
+- Existing agents in Springfield's `.kiro/agents/`
+- Key constraints (never mutate dump data, use `@springfield-constants` for paths, `spawnAsync` for subprocesses)
+- All 67 dump domain directories
+
+Used by: `eng-senior`, `eng-mid`, `eng-junior`
+
+---
+
+## `fidget-context`
+
+**Path:** `skills/fidget-context/SKILL.md`
+
+Deep context for the Fidget/Kite design system. Read before any task involving design tokens, CSS variables, component styling, or Figma integration.
+
+Covers:
+- Three-layer architecture (tokens → CSS → components)
+- Repository structure (`core/tokens`, `core/css`, `core/components`, `core/bin`, `packages/`)
+- Token pipeline (Style Dictionary → CSS custom properties, SCSS, ESM/CJS JS, iOS, Android)
+- Component architecture (Component/View split, available components, `ThemeProvider`, `clsx`)
+- CSS foundation and variable naming (`--fidget-{category}-{name}`)
+- Figma integration and sync pipeline
+- Build system (Style Dictionary, esbuild, PostCSS, Vitest, Storybook, Changesets)
+- Dependency graph
+- Key constraints (don't modify `libs/fidget` or `libs/kite-tokens` submodules, pnpm not bun)
+
+Used by: `eng-senior`, `eng-mid`
+
+---
+
+## `agent-os-domain`
+
+**Path:** `skills/agent-os-domain/SKILL.md`
+
+Domain knowledge for agent-os — Charter's telecom SaaS employee dashboard. Read before working on any task involving agent-os feature areas or business context.
+
+Covers:
+- What agent-os is (CSR dashboard, MFE architecture, mission-critical)
+- Technology context (React MFE, Fidget/Kite migration, MUI legacy, Spectrum Flow CI/CD)
+- Full 67-domain feature map organized by business function (account, billing, ordering, troubleshooting, etc.)
+- Key business concepts (CSR, handle time, MFE, Fidget adoption, Spectrum Flow)
+- What Springfield provides about agent-os (component inventory, Fidget adoption, MUI usage, dependency graphs)
+
+Used by: `eng-senior`, `eng-mid`, `stakeholder`

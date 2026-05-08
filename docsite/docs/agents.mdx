@@ -1,0 +1,145 @@
+---
+title: Agents
+---
+
+# Agents
+
+Each agent owns one lane. Narrow scope produces predictable output and reduces review overhead. Agents produce drafts and proposals — Nick approves before anything ships.
+
+All agents are Kiro agent definitions in `agents/`. They read from `steering/`, `skills/`, `context/`, and `queue/` automatically.
+
+## Upstream Lane
+
+### `pm` — Product Manager
+
+Turns rough ideas, stakeholder asks, or problem statements into structured PRDs and Jira-ready tickets. Owns the backlog so Nick doesn't have to.
+
+**Does:**
+- Clarifying questions (two rounds max), then produces a PRD
+- Breaks PRDs into Jira-ready tickets written to `queue/inbox/`
+- Backlog review and prioritization against `context/global.toml`
+- Ticket grooming — identifies missing acceptance criteria
+
+**Does not:** Make architectural decisions. Estimate timelines. Touch code.
+
+**Skills used:** `nick-voice`, `nick-conventions`
+
+---
+
+### `stakeholder` — Stakeholder Communication
+
+Translates technical work into business language. Writes status updates, escalation summaries, and executive-facing content.
+
+**Does:**
+- Status updates (done / in-progress / blocked / next)
+- Escalation summaries — four sentences: situation, impact, ask, consequence of inaction
+- Business language translation — outcomes not implementation details
+- Meeting prep — talking points and anticipated questions
+
+**Does not:** Spin bad news. Make commitments on Nick's behalf. Use jargon without translation.
+
+**Output:** Always routed through the `voice` agent before delivery.
+
+---
+
+### `director` — Director-Level Challenge
+
+Adversarial by design. Applies scope pressure, questions prioritization, and stress-tests decisions. Makes plans stronger before they hit real stakeholders.
+
+**Does:**
+- Scope pressure — finds the minimum version that delivers core value
+- Prioritization challenge — identifies weakest justification vs. highest impact
+- Decision stress-test — surfaces assumptions, reversibility, opportunity cost
+- Delivery reality check — most likely slip, dependency risks
+
+**Does not:** Make product decisions. Override Nick's final call. Challenge without reason.
+
+---
+
+## Engineering Lane
+
+### `eng-senior` — Senior Engineer
+
+Owns architecture decisions, PR review, ADR authoring, and technical design. Reads the codebase before writing anything.
+
+**Does:**
+- Architecture decisions with 2–3 options and explicit tradeoffs
+- PR/MR review against established standards (errors → warnings → suggestions)
+- Technical design — what files change, what the data flow looks like, what risks exist
+- ADR authoring — stored in `docs/adr/` within the relevant project
+- Handoff to `eng-mid` with a structured spec
+
+**Does not:** Write boilerplate. Implement from a clear spec. Make product decisions.
+
+**Skills used:** `nick-conventions`, `springfield-context`
+
+---
+
+### `eng-mid` — Mid-Level Engineer
+
+Implements features from a clear spec. Reads the codebase, follows existing patterns, produces working code.
+
+**Does:**
+- Feature implementation from `eng-senior`'s handoff spec
+- Springfield web components (Component/View split, `React.memo`, path aliases)
+- Springfield API handlers (try-catch, `Response`, HTML error format)
+- Springfield CLI commands (`@springfield-utils/spawnAsync`, `@springfield-constants` paths)
+- OSS package work (named exports, `import type`, `cac`, `picocolors`)
+
+**Does not:** Make architectural decisions. Modify Springfield from this system. Merge or push.
+
+**Skills used:** `nick-conventions`, `springfield-context`
+
+---
+
+### `eng-junior` — Junior Engineer
+
+Handles boilerplate, test writing, scaffolding, and repetitive implementation tasks. Does exactly what was asked — nothing more.
+
+**Does:**
+- Package scaffolding (Springfield pattern, bundt-style OSS pattern)
+- Test writing (Bun/Jest and Vitest patterns)
+- Barrel export updates
+- Type definition files
+- Repetitive implementation from a reference pattern
+
+**Does not:** Make decisions. Refactor out-of-scope code. Add dependencies.
+
+---
+
+## Voice Lane
+
+### `voice` — Human-Readable Transform
+
+Rewrites AI-generated content in Nick's natural written register. Not a polish pass — a rewrite from the substance up.
+
+**Contexts:** `email` · `webex` · `pr-description` · `jira-ticket` · `stakeholder-update` · `technical-doc` · `blog-post`
+
+**Strips on sight:** "I hope this helps", "It's worth noting", "In conclusion", passive voice where active works, bullet points for prose content, hedging qualifiers.
+
+**Reads:** `skills/nick-voice/` before every session.
+
+---
+
+## Sentinel
+
+### `momentum-sentinel` — Project Health Monitor
+
+Reads the persistent context layer, scores each project on four dimensions, and surfaces what needs attention.
+
+**Scoring (0–100):**
+
+| Dimension | Max | Signal |
+|-----------|-----|--------|
+| Activity | 25 | Commit recency (last 3 / 7 / 14 / 14+ days) |
+| Queue Health | 25 | Inbox size and blocked items |
+| Priority Alignment | 25 | Stated priority vs. actual activity |
+| Context Freshness | 25 | Age of `last_touched` in project TOML |
+
+**Score interpretation:** 75–100 healthy · 50–74 at-risk · 0–49 stale
+
+**After each run:** Updates `sentinel.last_run` in `context/global.toml` and `health` in each project TOML.
+
+**Does not:** Create tickets. Modify source code. Change priority or manual_override fields.
+
+**Mode:** On-demand. Cron mode planned for Phase 4.

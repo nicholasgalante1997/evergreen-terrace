@@ -1,0 +1,139 @@
+---
+title: Getting Started
+---
+
+# Getting Started
+
+## Prerequisites
+
+- Bun `>=1.3.13`
+- Kiro CLI (for invoking agents)
+- GitLab access to `gitlab.spectrumflow.net`
+
+## Clone and Install
+
+```sh
+git clone <repo-url> evergreen-terrace
+cd evergreen-terrace
+bun install
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in the values:
+
+```sh
+cp .env.example .env
+```
+
+```sh
+# Required for queue-server path resolution
+QUEUE_ROOT=/path/to/evergreen-terrace
+
+# Jira (optional — needed for PM agent Jira integration)
+JIRA_URL=https://charter.atlassian.net
+JIRA_EMAIL=your-email@charter.com
+JIRA_API_TOKEN=
+
+# GitLab (optional — needed for engineering agent MR creation)
+GITLAB_URL=https://gitlab.spectrumflow.net
+GITLAB_TOKEN=
+
+# Figma (optional — needed for design agent spec reading)
+FIGMA_ACCESS_TOKEN=
+```
+
+`QUEUE_ROOT` is the only required variable. It tells the queue server where to find the `queue/inbox` and `queue/active` directories. If unset, it defaults to `process.cwd()` — which works if you run the server from the repo root.
+
+## Running the Queue Server
+
+```sh
+bun run queue
+```
+
+The server starts on `http://localhost:2727`. Endpoints:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/queue` | Full queue state (inbox + active) |
+| `GET` | `/queue/inbox` | Pending items |
+| `GET` | `/queue/active` | In-flight items |
+| `POST` | `/queue/delegate` | Move item from inbox to active, assign agent |
+
+## Running the Terminal Dashboard
+
+In a second terminal:
+
+```sh
+bun run tui
+```
+
+Press `r` to refresh, `q` to quit.
+
+## Running the Web Dashboard
+
+```sh
+cd core/web
+bun install
+bun run dev
+```
+
+Opens at `http://localhost:2728`. Polls the queue server every 30 seconds. Has two tabs: Queue and Metrics.
+
+> The Metrics tab requires `core/metrics` to be running. It degrades gracefully if the metrics service is unreachable.
+
+## Running the Metrics Service
+
+```sh
+bun run metrics
+```
+
+Starts on `http://localhost:2729`. Required for the Metrics tab in the web dashboard.
+
+## Running the Sentinel
+
+```sh
+bun run sentinel
+```
+
+In `on-demand` mode (default), runs once and exits. In `cron` mode, stays alive and fires on schedule. See `context/global.toml` to configure.
+
+## Invoking Agents
+
+Agents are Kiro agent definitions in `agents/`. Invoke them from within the repo using the Kiro CLI:
+
+```sh
+# Run the momentum sentinel
+kiro agent run momentum-sentinel
+
+# Run the PM agent with a task
+kiro agent run pm "Add dark mode support to the web dashboard"
+```
+
+Agents read from `context/`, `queue/`, `skills/`, and `steering/` automatically.
+
+## Adding a Work Item Manually
+
+Create a TOML file in `queue/inbox/`:
+
+```toml
+[item]
+id = "abc-001"
+title = "Investigate Neo4j connection pooling issue in springfield-api"
+project = "springfield"
+type = "bug"
+priority = "p1"
+created = "2026-05-08T09:00:00.000Z"
+source = "manual"
+
+[delegation]
+agent = ""
+delegated_at = ""
+
+[context]
+description = "springfield-api intermittently drops Neo4j connections under load. Observed in staging after the March deploy."
+acceptance = "Root cause identified, fix implemented, regression test added."
+links = []
+```
+
+The queue server picks it up immediately on the next read.

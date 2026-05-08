@@ -1,0 +1,133 @@
+---
+title: Architecture
+---
+
+# Architecture
+
+## Monorepo Layout
+
+```
+evergreen-terrace/
+├── core/                    Runtime services
+│   ├── queue-server/        Bun HTTP server — queue state over REST (port 2727)
+│   ├── tui/                 Terminal dashboard
+│   ├── web/                 Vite/React web dashboard with metrics views (port 2728)
+│   ├── metrics/             Append-only event log and analytics API (port 2729)
+│   ├── sentinel/            Cron runner for momentum sentinel (port 2730)
+│   ├── conductor/           Parallel agent orchestrator (port 2731)
+│   └── desktop/             Tauri v2 native macOS app
+├── packages/
+│   ├── config/              Shared TypeScript configs (@evergreen-terrace/config)
+│   └── common/              Shared types and config constants (@evergreen-terrace/common)
+├── internal/
+│   └── build-utils/         createBaseConfig and concurrent_build
+├── agents/                  Kiro agent definitions
+├── skills/                  Shared knowledge bases
+├── steering/                Global steering docs read by all agents
+├── integrations/            Jira, GitLab, Figma MCP configs
+├── context/                 Persistent project state (TOML)
+│   ├── global.toml          Cross-project priority and sentinel state
+│   ├── projects/            Per-project TOML files
+│   ├── metrics/             Append-only event logs
+│   ├── reports/             Sentinel run reports
+│   └── beads/               Conductor bead state
+├── queue/
+│   ├── inbox/               Pending work items (TOML files)
+│   └── active/              In-flight work items (TOML files)
+└── docsite/                 This documentation site
+```
+
+## Design Principles
+
+**Narrow scope per agent.** Each agent owns one lane. The PM agent doesn't touch code. The voice agent doesn't write tickets. Narrow scope produces predictable output and reduces review overhead.
+
+**Persistent context over ephemeral state.** Everything that needs to survive a session restart lives in TOML files on disk. This is the Beads principle from Gastown — if an agent crashes, the next session picks up where it left off.
+
+**Human gates at phase transitions.** Agents produce drafts and proposals. Nick approves before work moves forward. The three gates are: *is this the right thing to build*, *is this the right architecture*, *is this good enough to ship*.
+
+**Entry points own path resolution.** Shared config (`@evergreen-terrace/common`) holds only structural constants — ports, type definitions. Filesystem paths are resolved once at startup in each entry point using `process.env.QUEUE_ROOT ?? process.cwd()`. This survives bundling.
+
+**Voice transform on all external output.** Nothing goes out that doesn't sound like Nick. The `voice` agent rewrites AI-generated content from the substance up, not as a polish pass.
+
+## Package Dependency Graph
+
+```
+@evergreen-terrace/queue-server
+  └── @evergreen-terrace/common  (types, config)
+  └── toml                       (TOML parsing)
+
+@evergreen-terrace/tui
+  └── @evergreen-terrace/common  (types, config)
+
+@evergreen-terrace/dashboard
+  └── @evergreen-terrace/common  (types, config)
+  └── react, react-dom
+```
+
+`@evergreen-terrace/common` is the single source of truth for `QueueItem`, `QueueState`, and shared port constants. No package duplicates these types.
+
+## TypeScript Configuration
+
+All packages extend the root `tsconfig.json`:
+
+```json
+{
+  "module": "Preserve",
+  "moduleDetection": "force",
+  "verbatimModuleSyntax": true,
+  "noUncheckedIndexedAccess": true,
+  "noImplicitOverride": true,
+  "strict": true
+}
+```
+
+`verbatimModuleSyntax` enforces `import type` for type-only imports. `noUncheckedIndexedAccess` catches array/object access bugs at compile time. These are non-negotiable.
+
+## Build Pipeline
+
+The repo uses Turbo for task orchestration. Task graph:
+
+```
+build → typecheck → test
+```
+
+Each package declares `typecheck` and `clean` scripts. The queue-server and TUI are runtime-only (no build step) — their `typecheck` scripts run `tsc --noEmit` against the source.
+
+The web dashboard uses Vite for development and production builds.
+
+## Queue Data Flow
+
+```
+Manual / Agent / Jira / GitLab
+         │
+         ▼
+   queue/inbox/*.toml          ← TOML files on disk
+         │
+         ▼
+   queue-server (port 2727)    ← HTTP API
+         │
+    ┌────┴────┐
+    ▼         ▼
+  TUI       Web dashboard
+(port n/a) (port 2728)
+         │
+         ▼ POST /queue/delegate
+   queue/active/*.toml         ← Moved on delegation
+```
+
+## Agent Context Flow
+
+When an agent runs, it reads from:
+
+1. `steering/` — global principles and project context (always)
+2. `skills/` — domain knowledge pulled on demand
+3. `context/projects/` — current project state
+4. `queue/inbox/` and `queue/active/` — current work items
+
+Agents write back to:
+
+- `context/global.toml` — sentinel updates `last_run` and `health` fields
+- `queue/inbox/` — PM agent creates new work items
+- `queue/active/` — delegation moves items here
+
+Agents never write to project source code from this system. Springfield is read-only.

@@ -1,0 +1,91 @@
+---
+title: Roadmap
+---
+
+# Roadmap
+
+## Phase 1 — MVP ✅
+
+Core infrastructure. The minimum viable team.
+
+- Queue server (Bun HTTP, TOML-backed, port 2727)
+- Terminal dashboard (TUI, priority-colored, r/q controls)
+- `@evergreen-terrace/common` — shared types and config
+- `context/` schema and project TOML files (springfield, fidget-tokens, adaptive-spirit, spectrum-ga-map)
+- `skills/nick-voice/` — voice model from writing samples
+- `skills/nick-conventions/` — TypeScript/React/Bun patterns
+- `steering/` — code-style, architecture-principles, project-context
+- `agents/pm/` — PRD generation, Jira tickets, backlog management
+- `agents/momentum-sentinel/` — on-demand project health scoring
+
+---
+
+## Phase 2 — Voice + Engineering Team ✅
+
+The full engineering org. Voice transform. Deep Springfield context.
+
+- `skills/springfield-context/` — Springfield architecture deep dive
+- `agents/voice/` — human-readable transform pipeline
+- `agents/eng-senior/` — architecture decisions, PR review, ADR authoring
+- `agents/eng-mid/` — feature implementation from spec
+- `agents/eng-junior/` — boilerplate, tests, scaffolding
+
+---
+
+## Phase 3 — Full Team + Integrations ✅
+
+Stakeholder and director agents. Web dashboard. Live integrations.
+
+- `agents/stakeholder/` — status updates, business language translation
+- `agents/director/` — scope pressure, prioritization challenge
+- `skills/fidget-context/` — Fidget/Kite design system knowledge
+- `skills/agent-os-domain/` — agent-os domain knowledge (67 feature domains)
+- `core/dashboard/web/` — Vite/React web dashboard (port 2728)
+- `integrations/jira/` — Jira MCP config and usage guide
+- `integrations/gitlab/` — GitLab MCP config and usage guide
+- `integrations/figma/` — Figma MCP config and usage guide
+- Cron mode documentation for momentum-sentinel
+
+---
+
+## Phase 4 — Metrics, Dashboard Tracking, and Native Interface
+
+Observability, analytics, and long-term platform evolution.
+
+### Metrics and Dashboard Tracking
+
+- `core/metrics/` — metrics collection service
+  - Agent invocation counts and latency
+  - Queue throughput (items created, delegated, completed per day/week)
+  - Sentinel run history and score trends over time
+  - Per-project activity trends
+- Dashboard metrics views
+  - Queue velocity chart (items in/out over time)
+  - Project health history (sentinel scores over time)
+  - Agent utilization breakdown
+  - Work item age distribution
+- Metrics persistence — append-only TOML or SQLite in `context/metrics/`
+- Weekly digest — sentinel extended to produce trend data
+
+### Cron-Based Sentinel
+
+- `core/sentinel/` — Bun cron runner
+- Reads `cron_schedule` from `context/global.toml`
+- Writes reports to `context/reports/sentinel-{date}.md`
+- Queue server exposes latest report via `GET /sentinel/latest`
+
+### Native Desktop Interface
+
+- Tauri wrapper around `core/dashboard/web/`
+  - Native macOS app
+  - System tray integration — queue count badge, quick-add work item
+  - Native notifications for sentinel alerts
+  - No new React code — same web dashboard, native shell
+- Offline-capable — reads from local TOML files without server
+
+### Parallel Execution (Gastown-style)
+
+- `core/conductor/` — Mayor/Polecats/Refinery/Witness orchestrator
+- Git-backed bead state (survives session restarts)
+- Nondeterministic idempotence — tasks have acceptance criteria, not deterministic replay
+- Parallel agent workers for high-throughput implementation sprints

@@ -1,0 +1,14 @@
+{
+  "name": "@evergreen-terrace/docsite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx @bundt/dxdocs dev",
+    "build": "bunx @bundt/dxdocs build",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@bundt/dxdocs": "latest"
+  }
+}

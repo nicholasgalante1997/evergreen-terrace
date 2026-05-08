@@ -1,0 +1,69 @@
+---
+title: Sentinel
+---
+
+# Sentinel
+
+Cron runner for the momentum sentinel agent. Reads the schedule from `context/global.toml`, invokes the sentinel agent on schedule, writes reports to `context/reports/`, and notifies the metrics service.
+
+## Running
+
+```sh
+bun run sentinel
+```
+
+When `mode = "on-demand"` (the default), the process exits immediately — use this to trigger a one-off run. When `mode = "cron"`, the process stays alive and fires on the configured schedule.
+
+## Configuration
+
+Set the mode in `context/global.toml`:
+
+```toml
+[sentinel]
+last_run = ""
+mode = "on-demand"           # "on-demand" | "cron"
+cron_schedule = "0 8 * * 1-5"  # 8am weekdays — only used when mode = "cron"
+```
+
+## Reports
+
+Each run writes a Markdown report to `context/reports/`:
+
+```
+context/reports/
+└── sentinel-2026-05-08.md    # One file per run date
+```
+
+Same-day runs overwrite the previous report for that date.
+
+## API Reference
+
+Runs on `http://localhost:2730`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/sentinel/latest` | Latest report as Markdown |
+| `GET` | `/sentinel/status` | `{ last_run, mode, next_run }` |
+
+## Scoring
+
+The sentinel scores each project on four dimensions (0–25 each):
+
+| Dimension | Signal |
+|-----------|--------|
+| Activity | Commit recency (last 3 / 7 / 14 / 14+ days) |
+| Queue Health | Inbox size and blocked items |
+| Priority Alignment | Stated priority vs. actual activity |
+| Context Freshness | Age of `last_touched` in project TOML |
+
+**Score interpretation:** 75–100 healthy · 50–74 at-risk · 0–49 stale
+
+After each run, `context/global.toml` is updated with `last_run` and each project TOML gets an updated `health` field.
+
+## Manual Override
+
+Pass a priority override when invoking the agent directly:
+
+```sh
+kiro agent run momentum-sentinel "treat springfield as p0 for this run"
+```

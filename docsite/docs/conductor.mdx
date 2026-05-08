@@ -1,0 +1,72 @@
+---
+title: Conductor
+---
+
+# Conductor
+
+Gastown-inspired parallel agent orchestrator. Nick describes a goal, the conductor breaks it into beads (atomic tasks), dispatches them to parallel agent workers, and manages a merge queue to prevent collisions. All state persists to disk — process restarts resume in-progress goals.
+
+## Running
+
+```sh
+bun run conductor
+```
+
+Starts on `http://localhost:2731`.
+
+## Concepts
+
+**Bead** — an atomic unit of work. A TOML file with a task description, acceptance criteria, assigned worker role, and status. Stored in `context/beads/{goal_id}/`.
+
+**Mayor** — receives a goal, calls `eng-senior` to decompose it into beads, identifies parallelism.
+
+**Polecat** — ephemeral worker. Picks up a bead, runs `kiro agent run {role}`, marks it complete or failed.
+
+**Refinery** — merge queue. Serializes beads that share output files to prevent conflicts.
+
+**Witness** — health monitor. Polls every 60 seconds, re-queues beads stalled for more than 5 minutes.
+
+## Submitting a Goal
+
+```sh
+curl -X POST http://localhost:2731/conductor/goal \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Add dark mode to the web dashboard"}'
+```
+
+Returns a goal ID. The Mayor immediately begins decomposing the goal into beads.
+
+## API Reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/conductor/goal` | Submit a goal `{ description: string }` |
+| `GET` | `/conductor/goals` | List all goals and bead status |
+| `GET` | `/conductor/goal/:id` | Goal detail with all beads |
+| `POST` | `/conductor/bead/:id/retry` | Re-queue a failed bead |
+
+## Bead State
+
+```
+context/beads/
+└── {goal_id}/
+    ├── goal.toml       # Goal description and overall status
+    ├── bead-001.toml   # Individual task
+    └── bead-002.toml
+```
+
+Bead statuses: `pending` → `in_progress` → `completed` | `failed`
+
+## Parallelism
+
+Beads with no shared `output_files` are dispatched concurrently up to `maxConcurrent` (default: 3). Beads that share output files are serialized by the Refinery.
+
+## Nondeterministic Idempotence
+
+Beads have acceptance criteria, not deterministic replay. If a bead fails and is retried, the worker may take a different approach — what matters is that the acceptance criteria are met.
+
+## Environment
+
+```sh
+CONDUCTOR_ROOT=/path/to/evergreen-terrace   # Resolves context/beads/ path
+```

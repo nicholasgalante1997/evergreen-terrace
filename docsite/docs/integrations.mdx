@@ -1,0 +1,141 @@
+---
+title: Integrations
+---
+
+# Integrations
+
+MCP wrappers for Jira, GitLab, and Figma. Each integration is a configuration guide in `integrations/` — the actual MCP servers are external packages.
+
+## Jira
+
+**Config:** `integrations/jira/README.md`
+
+Used by the PM agent to create, update, and query tickets without Nick touching Jira directly.
+
+### Setup
+
+Add to `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "jira": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-jira"],
+      "env": {
+        "JIRA_URL": "https://charter.atlassian.net",
+        "JIRA_EMAIL": "c-nicholas.galante@charter.com",
+        "JIRA_API_TOKEN": "<token>"
+      }
+    }
+  }
+}
+```
+
+Get an API token at `https://id.atlassian.com/manage-profile/security/api-tokens`.
+
+### Available Tools
+
+`jira_create_issue` · `jira_update_issue` · `jira_get_issue` · `jira_search_issues` · `jira_add_comment` · `jira_transition_issue`
+
+### PM Agent Ticket Pattern
+
+```
+Issue Type: Story (features), Bug (bugs), Task (ops/research)
+Priority:   Highest (p0), High (p1), Medium (p2), Low (p3)
+Labels:     evergreen-terrace, [project-name]
+```
+
+---
+
+## GitLab
+
+**Config:** `integrations/gitlab/README.md`
+
+Used by engineering agents to create MRs, check pipeline status, and query repository state.
+
+### Setup
+
+Add to `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "env": {
+        "GITLAB_URL": "https://gitlab.spectrumflow.net",
+        "GITLAB_TOKEN": "<token>"
+      }
+    }
+  }
+}
+```
+
+Get a PAT with `api`, `read_repository`, `write_repository` scopes at `https://gitlab.spectrumflow.net/-/user_settings/personal_access_tokens`.
+
+### Available Tools
+
+`gitlab_create_merge_request` · `gitlab_get_merge_request` · `gitlab_list_merge_requests` · `gitlab_get_pipeline` · `gitlab_list_pipelines` · `gitlab_get_file` · `gitlab_create_file` · `gitlab_update_file`
+
+### MR Creation Pattern
+
+`eng-mid` creates MRs with this structure:
+
+```
+Title:  [type]: brief description (under 70 chars)
+
+## What
+[what changed]
+
+## Why
+[ticket reference and business reason]
+
+## Testing
+[how to verify]
+```
+
+Source branch: `feature/[ticket-id]-[slug]` · Target: `main` · Labels: `evergreen-terrace`
+
+### Pipeline Monitoring
+
+The momentum sentinel can query pipeline status as part of project health scoring. A failing `main` branch pipeline is a health signal worth surfacing.
+
+---
+
+## Figma
+
+**Config:** `integrations/figma/README.md`
+
+Used by design-adjacent agents to read design specs, inspect component properties, and access design tokens.
+
+### Setup
+
+Add to `.kiro/settings/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-mcp"],
+      "env": {
+        "FIGMA_ACCESS_TOKEN": "<token>"
+      }
+    }
+  }
+}
+```
+
+Get a PAT at `https://www.figma.com/settings` → Personal access tokens.
+
+### Available Tools
+
+`figma_get_file` · `figma_get_node` · `figma_get_components` · `figma_get_styles` · `figma_get_variables` · `figma_get_images` · `figma_get_comments`
+
+### Usage Notes
+
+The Figma MCP is for ad-hoc inspection — reading specs, comparing implementation against design, checking token values. It is **not** a replacement for the automated token sync pipeline in `fidget-tokens`. For token sync, use the existing `@fidget-tokens/jobs` pipeline.
+
+When implementing a design, `eng-mid` uses `figma_get_node` to inspect spacing, color, and typography values, then maps them to the nearest Fidget token equivalents (`--fidget-*` CSS variables).
