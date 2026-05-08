@@ -1,0 +1,29 @@
+{
+  "productName": "evergreen-terrace",
+  "version": "0.1.0",
+  "identifier": "com.evergreen-terrace.desktop",
+  "build": {
+    "devUrl": "http://localhost:2728",
+    "frontendDist": "../../web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "evergreen-terrace",
+        "width": 1024,
+        "height": 768,
+        "minWidth": 720,
+        "minHeight": 500
+      }
+    ]
+  },
+  "bundle": {
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
