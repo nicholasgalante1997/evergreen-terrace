@@ -1,0 +1,24 @@
+{
+  "name": "@evergreen-terrace/common",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build/index.ts && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@evergreen-terrace/build-utils": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.7.3",
+    "@evergreen-terrace/config": "workspace:*"
+  }
+}
