@@ -1,0 +1,21 @@
+[project]
+name = "fidget-tokens"
+repo = "/Users/P3062609/dev/agent-tools-ds/fidget-tokens"
+gitlab_url = ""
+description = "Design system token library and component library for agent-os. pnpm/Turbo monorepo. Includes Fidget and Kite token sets as git submodules, React components, CSS utilities, VS Code extension, Storybook, and dxdocs documentation site."
+
+[status]
+priority = "p2"
+phase = "maintenance"
+last_touched = "2026-04-28"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Active maintenance. libs/fidget and libs/kite-tokens are git submodules. Uses @changesets for versioning, @bundt/dxdocs for docs, Storybook for component dev. Has a VS Code extension in core/vscode-extension. Figma sync pipeline exists."
+next_action = "Populate skills/fidget-context/ with token architecture and component patterns"

@@ -1,0 +1,21 @@
+[project]
+name = "spectrum-ga-map"
+repo = "/Users/P3062609/dev/spectrum-ga-map"
+gitlab_url = ""
+description = "Vite/React/Bun application. Has CI pipeline, Docker, deployment config. Maintenance surface."
+
+[status]
+priority = "p3"
+phase = "maintenance"
+last_touched = "2026-04-28"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Vite-based, Bun runtime. Has MIGRATION.md suggesting a recent stack migration. Doc directory updated recently."
+next_action = "Review doc/ for any outstanding migration items"
