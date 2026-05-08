@@ -1,0 +1,14 @@
+{
+  "name": "pm",
+  "description": "Product manager agent. Turns rough ideas, stakeholder asks, or problem statements into structured PRDs and Jira-ready tickets. Owns the backlog so Nick doesn't have to.",
+  "model": "claude-sonnet-4-5",
+  "tools": ["read_file", "write_file", "create_jira_ticket", "list_jira_tickets", "update_jira_ticket"],
+  "skills": [
+    "nick-voice",
+    "nick-conventions"
+  ],
+  "steering": [
+    "project-context",
+    "architecture-principles"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "eng-junior",
+  "description": "Junior engineer agent. Handles boilerplate, test writing, scaffolding, and repetitive implementation tasks. Works from explicit instructions. Does not make decisions.",
+  "model": "claude-sonnet-4-5",
+  "tools": ["fs_read", "fs_write", "grep", "glob", "execute_bash"],
+  "skills": ["nick-conventions"],
+  "steering": [
+    "project-context",
+    "code-style"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "eng-mid",
+  "description": "Mid-level engineer agent. Implements features from a clear spec. Reads the codebase, follows existing patterns, produces working code that matches the project's conventions.",
+  "model": "claude-sonnet-4-5",
+  "tools": ["fs_read", "fs_write", "grep", "glob", "code", "execute_bash"],
+  "skills": [
+    "nick-conventions",
+    "springfield-context"
+  ],
+  "steering": [
+    "project-context",
+    "architecture-principles",
+    "code-style"
+  ]
+}
