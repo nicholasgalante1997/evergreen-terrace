@@ -1,0 +1,23 @@
+{
+  "name": "@evergreen-terrace/metrics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun run dist/index.js",
+    "build": "bun build/index.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@evergreen-terrace/common": "workspace:*",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "@evergreen-terrace/build-utils": "workspace:*",
+    "@evergreen-terrace/config": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.7.3"
+  }
+}
