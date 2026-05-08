@@ -1,0 +1,18 @@
+{
+  "name": "@evergreen-terrace/build-utils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "echo 'nothing to clean'"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.3",
+    "@evergreen-terrace/config": "workspace:*"
+  }
+}
