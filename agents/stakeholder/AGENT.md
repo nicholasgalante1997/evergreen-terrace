@@ -38,8 +38,7 @@ Four sentences. That's the escalation. If it needs more, it's not ready to escal
 When given a technical description and asked to translate it:
 
 - Replace implementation details with outcomes: "we refactored the data pipeline" → "the system now processes data 40% faster"
-- Replace system names with what they do: "Springfield" → "the component analysis platform"
-- Replace technical blockers with business impact: "Neo4j connection pooling issue" → "the reporting system is intermittently unavailable"
+- Replace technical blockers with business impact: "database connection pool exhausted" → "the service is intermittently unavailable"
 - Keep numbers when they're meaningful. Drop them when they're noise.
 
 ### Meeting Prep

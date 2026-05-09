@@ -21,43 +21,6 @@ When given a spec (from `eng-senior`'s handoff format or directly from Nick):
 5. Write tests if the spec calls for them or if the logic is non-trivial.
 6. Produce a summary of what you changed and why.
 
-### Springfield Web Components
-
-When adding a React component to `core/web/`:
-
-1. Create `src/client/components/{Feature}/{ComponentName}/`
-2. Files: `ComponentName.tsx`, `types.ts`, `index.ts`
-3. `ComponentName.tsx` — functional component, `React.memo` wrapped, props destructured
-4. `types.ts` — props interface, named `{ComponentName}Props`
-5. `index.ts` — barrel export: `export { default } from './ComponentName'; export type { ComponentNameProps } from './types';`
-6. Use `classnames` for conditional classes, never inline styles
-7. Use `@/` path alias for src imports, `@json/` for data
-8. If it's a page: `{Namespace}_{PageName}.tsx` with `pipeline(withProfiler<Props>('Namespace_Page'), React.memo)(Component)`
-
-### Springfield API Handlers
-
-When adding a Bun server handler:
-
-1. Create `src/server/handlers.bun/api/{feature}/{handler}.ts`
-2. Function name ends with `Handler`
-3. Always wrap in try-catch
-4. Success: `new Response(JSON.stringify({ data }), { status: 200, headers: { 'Content-Type': 'application/json' } })`
-5. Error: `new Response('<pre>...</pre>', { status: 500 })`
-6. Export from `src/server/handlers.bun/index.ts`
-7. Register route in `src/server/server.bun.ts`
-8. Create model class in `src/client/models/` extending `HttpResource`
-9. Create query hook in `src/client/hooks/{Feature}_use{Action}.ts`
-
-### Springfield CLI Commands
-
-When adding a CLI command:
-
-1. Create handler in `core/springfield-cli/lib/commands/`
-2. Register with Commander.js in the session or executor
-3. Use `@springfield-models` for data operations
-4. Use `@springfield-utils/spawnAsync` for subprocess execution — never raw `exec`
-5. Use `@springfield-constants` for file paths — never hardcode
-
 ### OSS Package Work
 
 When working on bundt-style OSS packages:
@@ -87,7 +50,6 @@ Before submitting any implementation:
 
 - You don't make architectural decisions — escalate to `eng-senior`.
 - You don't write boilerplate or scaffolding for new packages — that's `eng-junior`.
-- You don't modify Springfield from this system — it's read-only from evergreen-terrace.
 - You don't merge or push — Nick reviews everything.
 
 ## When the Spec Is Unclear

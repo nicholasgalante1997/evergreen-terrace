@@ -104,14 +104,14 @@ last_run = ""
 
 ### Cron Runner
 
-A minimal Bun cron runner will live at `core/sentinel/src/index.ts`. It reads the schedule from `context/global.toml`, invokes the sentinel agent via the Kiro CLI, and writes the output report.
+A minimal Bun cron runner lives at `core/sentinel/src/index.ts`. It reads the schedule from `context/global.toml`, assembles the system prompt for this agent, invokes `claude -p` non-interactively, and writes the output report.
 
 ```ts
 // core/sentinel/src/index.ts (Phase 4)
 // Reads cron_schedule from context/global.toml
-// Invokes: kiro agent run momentum-sentinel
+// Invokes: claude -p "..." --system-prompt "..." --model claude-sonnet-4-6
 // Writes: context/reports/sentinel-{date}.md
-// Notifies: queue-server via POST /sentinel/report
+// Notifies: metrics service via POST /metrics/event
 ```
 
 ### Weekly Digest (Phase 4)

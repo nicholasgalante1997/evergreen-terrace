@@ -30,6 +30,3 @@ Build the thing that's needed. Don't build the framework that could build the th
 
 Services log what they do. The queue server logs every state transition. The sentinel logs its scoring rationale. Logs are structured (JSON) in production, human-readable in development.
 
-## Springfield is Off-Limits
-
-The Springfield platform (`agent-tools-prototype-workspace`) is not modified by agents in this system. It is a data source and an MCP server. Agents may read from it and call its MCP tools. They do not write to it.

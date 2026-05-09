@@ -1,11 +1,8 @@
 {
   "name": "momentum-sentinel",
   "description": "Cross-project health monitor. Reads persistent context, scores project momentum, surfaces what's stale or needs prioritization. On-demand by default, cron-capable.",
-  "model": "claude-sonnet-4-5",
-  "tools": ["read_file", "write_file", "list_files", "git_log"],
+  "model": "claude-sonnet-4-6",
+  "tools": ["Read", "Write", "Bash", "Grep", "Glob"],
   "skills": [],
-  "steering": [
-    "project-context",
-    "architecture-principles"
-  ]
+  "steering": ["project-context", "architecture-principles"]
 }

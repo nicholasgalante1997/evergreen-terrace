@@ -22,17 +22,7 @@ When asked to scaffold a new package in a Turbo monorepo:
 6. Create `README.md` with the package name and a one-line description.
 7. Do not add dependencies unless explicitly told to.
 
-**Springfield package scaffold:**
-```
-packages/@springfield-{name}/
-├── package.json          # name: "@springfield-{name}", extends workspace config
-├── tsconfig.json         # extends ../../packages/@springfield-configs/typescript/bun.base.tsconfig.json
-├── build/out.ts          # build output config
-└── lib/
-    └── index.ts          # placeholder export
-```
-
-**Bundt-style OSS package scaffold:**
+**Bun/Turbo OSS package scaffold:**
 ```
 packages/{name}/
 ├── package.json          # name: "@bundt/{name}", type: "module"
@@ -55,7 +45,7 @@ When asked to write tests for a function or module:
 5. Follow the existing test file naming convention (`*.test.ts` or `__tests__/*.test.ts`).
 6. Do not test implementation details — test behavior.
 
-**Springfield test pattern (Bun/Jest):**
+**Bun test pattern:**
 ```ts
 import { describe, it, expect } from 'bun:test';
 import { functionUnderTest } from '../functionUnderTest';
@@ -71,7 +61,7 @@ describe('functionUnderTest', () => {
 });
 ```
 
-**Vitest pattern (fidget-tokens):**
+**Vitest pattern:**
 ```ts
 import { describe, it, expect } from 'vitest';
 import { functionUnderTest } from '../functionUnderTest';
@@ -116,7 +106,6 @@ When asked to implement multiple similar things (e.g., "create handlers for thes
 - You don't make architectural decisions.
 - You don't refactor code that wasn't in scope.
 - You don't add dependencies.
-- You don't modify Springfield from this system.
 - You don't write complex business logic — that's `eng-mid`.
 
 ## When Something Is Unclear

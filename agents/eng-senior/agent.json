@@ -1,15 +1,8 @@
 {
   "name": "eng-senior",
-  "description": "Senior engineer agent. Owns architecture decisions, PR review, ADR authoring, and technical design for Springfield and related projects. Reads the codebase before writing anything.",
-  "model": "claude-opus-4-5",
-  "tools": ["fs_read", "fs_write", "grep", "glob", "code", "execute_bash"],
-  "skills": [
-    "nick-conventions",
-    "springfield-context"
-  ],
-  "steering": [
-    "project-context",
-    "architecture-principles",
-    "code-style"
-  ]
+  "description": "Senior engineer agent. Owns architecture decisions, PR review, ADR authoring, and technical design. Reads the codebase before writing anything.",
+  "model": "claude-opus-4-7",
+  "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+  "skills": ["nick-conventions", "bundt-context", "foresight-context"],
+  "steering": ["project-context", "architecture-principles", "code-style"]
 }

@@ -9,9 +9,9 @@ This skill is a living document. Update it as new patterns are established or ol
 ## Runtime and Tooling
 
 - **Runtime:** Bun first. Node.js only when a dependency forces it.
-- **Package manager:** Bun for Bun-native projects, pnpm for design system work (fidget-tokens uses pnpm workspaces).
+- **Package manager:** Bun for Bun-native projects. pnpm for legacy pnpm workspaces.
 - **Monorepo:** Turbo for task orchestration. Workspaces defined in `package.json`.
-- **Build:** Bun's native bundler for CLI/server packages. Webpack for legacy React apps (adaptive-spirit). Vite for newer React apps (spectrum-ga-map).
+- **Build:** Bun's native bundler for CLI/server packages. Webpack for legacy React apps. Vite for React SPAs.
 - **TypeScript:** Strict mode. `moduleResolution: "bundler"` for Bun projects.
 
 ---
@@ -49,8 +49,6 @@ Explicit named imports. No barrel re-exports that obscure origin. Group: externa
 import { readFileSync } from "fs";
 import { join } from "path";
 
-import { ComponentAnalyzer } from "@springfield-models";
-
 import { parseToml } from "./toml";
 ```
 
@@ -59,10 +57,10 @@ import { parseToml } from "./toml";
 Explicit error types. Don't swallow errors silently. Use custom error classes for domain errors.
 
 ```ts
-class SpringfieldError extends Error {
+class AppError extends Error {
   constructor(message: string, public readonly code: string) {
     super(message);
-    this.name = "SpringfieldError";
+    this.name = "AppError";
   }
 }
 ```
@@ -97,7 +95,7 @@ export function Button({ label, onClick, variant = "primary" }: ButtonProps) {
 
 ### State
 
-Zustand for global/shared state (observed in core/web). Local `useState` for component-local state. XState for complex workflow state (observed in `@springfield-state`).
+Local `useState` for component-local state. Zustand for global/shared state. XState for complex multi-step workflow state.
 
 ### Styling
 
@@ -105,7 +103,7 @@ SCSS modules or CSS-in-JS (MUI's `sx` prop) depending on the project. Don't mix 
 
 ---
 
-## CLI Conventions (Springfield pattern)
+## CLI Conventions
 
 - `commander` or `cac` for argument parsing
 - `inquirer` for interactive prompts
@@ -128,7 +126,52 @@ SCSS modules or CSS-in-JS (MUI's `sx` prop) depending on the project. Don't mix 
 
 ## Testing
 
-Jest for Springfield (legacy). Vitest for newer projects (fidget-tokens). Playwright for E2E (adaptive-spirit). Tests live alongside source in `*.test.ts` files or in a top-level `tests/` directory.
+Bun test for Bun-native projects. Vitest for Vite-based projects. Jest for legacy projects. Playwright for E2E. Tests live alongside source in `*.test.ts` files or in a top-level `tests/` directory.
+
+---
+
+## Rust Conventions
+
+Used in `foresight` and Tauri widget backends. Key patterns observed in the codebase:
+
+### Error handling
+- **Library crates:** `thiserror` enums with typed variants and `#[from]` conversions. Never expose `rusqlite::Error` or `std::io::Error` directly — wrap them.
+- **Application crates:** `anyhow` with `?` for propagation. `context("what failed")` to add callsite info.
+- No `unwrap()` or `expect()` outside of `main()` initialization and tests.
+
+```rust
+// Library crate error (foresight-db pattern)
+#[derive(Debug, thiserror::Error)]
+pub enum DbError {
+    #[error("sqlite error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+}
+
+// Application crate (foresight-agent pattern)
+use anyhow::{Context, Result};
+fn run() -> Result<()> {
+    let db = Database::open().context("failed to open database")?;
+    Ok(())
+}
+```
+
+### Logging
+`tracing` + `tracing-subscriber`. Never `println!()` or `log::info!()` in library code.
+
+```rust
+tracing::info!(pid = %snapshot.pid, name = %snapshot.name, "collected snapshot");
+```
+
+### Async
+Tokio runtime. `#[tokio::main]` on binary entry. No blocking I/O (`std::fs`) in async contexts — use `tokio::fs`.
+
+### Serialization
+All persisted model structs derive `serde::Serialize, serde::Deserialize`. Use `chrono::DateTime<Utc>` for timestamps (with `features = ["serde"]`).
+
+### Workspace deps
+Declare all shared deps at root `Cargo.toml` `[workspace.dependencies]`. Crates reference them as `dep.workspace = true`.
 
 ---
 

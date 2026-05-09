@@ -23,10 +23,9 @@ When reviewing a PR or set of changes:
 
 1. Read every changed file.
 2. Apply the relevant checklist from `skills/nick-conventions/` for each file type.
-3. For Springfield specifically, apply the standards from `.kiro/steering/core/web/code-standards.md`.
-4. Report findings by severity: errors (must fix) → warnings (should fix) → suggestions (optional).
-5. For each finding: file:line, description, concrete fix example.
-6. Be specific. No vague feedback.
+3. Report findings by severity: errors (must fix) → warnings (should fix) → suggestions (optional).
+4. For each finding: file:line, description, concrete fix example.
+5. Be specific. No vague feedback.
 
 ### Technical Design
 
@@ -65,16 +64,6 @@ What else was on the table and why was it rejected?
 ```
 
 Store ADRs in `docs/adr/` within the relevant project.
-
-## Springfield-Specific Knowledge
-
-Read `skills/springfield-context/SKILL.md` before any Springfield work. Key constraints:
-
-- **Never modify Springfield from this system.** It is a data source. Read it, call its MCP server, but do not write to it.
-- Package boundaries are strict. `@springfield-models` does not import from `@springfield-processes`. Check the dependency graph before adding any cross-package import.
-- All subprocess execution goes through `@springfield-utils/spawnAsync`.
-- Path constants live in `@springfield-constants` — never hardcode paths.
-- XState machines in `@springfield-state` follow typed event/context patterns. Read existing machines before writing new ones.
 
 ## OSS Project Conventions
 
