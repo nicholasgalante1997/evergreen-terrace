@@ -1,0 +1,40 @@
+[item]
+id = "b7e3a1f5-9c2d-4e08-8b6a-da4712936802"
+title = "@bundt/prev: scope v1.0 milestone and define API stability contract"
+project = "bundt"
+type = "pm"
+priority = "p1"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "pm"
+delegated_at = ""
+
+[context]
+description = """
+`@bundt/prev` is at v0.3.0. The core engine (Fragment/Frame/Session/Binding/DataSource)
+and streaming SSR are implemented. The repo has gone 21 days without a commit, indicating
+the next milestone has not been scoped into actionable work.
+
+v1.0 represents API stability — the point at which downstream consumers (deckvault,
+arcturus-jr, experiments) can depend on the `@bundt/prev` surface without expecting
+breaking changes. This item produces the scoping document for that milestone.
+"""
+
+acceptance = """
+- [ ] Audit current @bundt/prev public API surface — document what is stable vs. provisional
+- [ ] Identify what remains before API can be locked (missing features, known gaps,
+      ergonomic issues in the Fragment/Frame/Session model)
+- [ ] Document which downstream projects (deckvault web, arcturus-jr) use @bundt/prev
+      today and what surface area they depend on
+- [ ] Define explicit v1.0 acceptance criteria: what the API must do and must not break
+- [ ] Produce a prioritized list of tasks between v0.3.0 and v1.0
+- [ ] Output: one queue item per distinct v1.0 task, ready for delegation to eng-mid
+"""
+
+links = [
+  "skills/bundt-context/SKILL.md",
+  "~/dev/bundt/packages/prev/",
+  "~/dev/bundt/CHANGELOG.md"
+]

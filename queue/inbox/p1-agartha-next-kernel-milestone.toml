@@ -1,0 +1,51 @@
+[item]
+id = "e6a2d8b9-4f1c-4e05-5a7e-ad7845269005"
+title = "agartha: scope next kernel milestone post-IDT/GDT (Phase 04)"
+project = "agartha"
+type = "pm"
+priority = "p1"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "pm"
+delegated_at = ""
+
+[context]
+description = """
+IDT (Interrupt Descriptor Table) and GDT (Global Descriptor Table) were completed in
+Phase 04 (commit 2026-04-27). These are the hardware abstraction floor — CPU exception
+handling and memory segment descriptors are in place. The TOML context was not updated
+to reflect this (still shows last_touched 2026-04-13), suggesting momentum is real but
+context management has slipped.
+
+The study-and-reimplement path (blog_os → xv6 → Linux/OpenBSD) and the SPEC_00 through
+SPEC_09 spec stack define the roadmap. The next milestone post-IDT/GDT typically involves
+memory management (physical memory manager, paging, virtual address space) and early
+process model work.
+
+This item is a context and scoping pass — not implementation. Read the current spec stack,
+identify what Phase 04 completion unlocks, and produce the next scoped queue item.
+
+CRITICAL: If a Nemotron session is needed during scoping, start with /nemotron.
+Never start llama-server --ctx-size above 262144.
+"""
+
+acceptance = """
+- [ ] Update `context/projects/agartha.toml` last_touched to 2026-04-27 (reflect reality)
+- [ ] Read SPEC_00 through SPEC_09 in .claude/spec/ and identify which specs are complete
+      vs. in-progress vs. not started
+- [ ] Document what Phase 04 (IDT + GDT) completion unlocks architecturally
+- [ ] Identify the next kernel milestone: most likely physical memory management
+      (frame allocator) or early interrupt handler registration
+- [ ] Output: one queue item for the next concrete implementation milestone,
+      scoped for eng-mid delegation with Nemotron two-model workflow guidance
+- [ ] The cryptographic easter egg thread — confirm no spec reveals its shape prematurely
+"""
+
+links = [
+  "~/dev/.Agartha/.claude/spec/",
+  "~/dev/.Agartha/",
+  "context/projects/agartha.toml",
+  "context/projects/nemotron.toml"
+]

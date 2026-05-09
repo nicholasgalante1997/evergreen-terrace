@@ -1,0 +1,63 @@
+[item]
+id = "c5f8b2a4-9d1e-4c01-1f6b-ef2289713409"
+title = "evergreen-terrace: conductor end-to-end validation with a real goal submission"
+project = "evergreen-terrace"
+type = "ops"
+priority = "p1"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "eng-senior"
+delegated_at = ""
+
+[context]
+description = """
+The conductor orchestrator is implemented in `core/conductor/src/` (mayor.ts, polecat.ts,
+runner.ts). Phase 4 specs are defined. But the conductor has not been validated end-to-end
+with a real goal submission — the queue is empty and no beads have been created in
+context/beads/.
+
+The conductor is the critical path for Phase 4: it's what enables delegating queue items
+to agents non-interactively (the GasTown-style parallel model). Until it's verified,
+evergreen-terrace can't be used to self-delegate work efficiently.
+
+This item is an end-to-end smoke test: submit a real goal, verify bead creation,
+verify agent invocation, verify disk-backed state recovery on restart.
+
+Service ports: queue-server:2727, conductor:2731.
+"""
+
+acceptance = """
+- [ ] `bun run build` at repo root completes with no errors (all core/ packages)
+- [ ] `bun run queue` starts queue-server on port 2727 (health check: GET /health)
+- [ ] `bun run conductor` starts conductor on port 2731 (health check: GET /health)
+
+Goal submission smoke test:
+- [ ] POST a test goal to conductor (e.g., "write a hello world function in TypeScript")
+- [ ] Conductor creates a bead in context/beads/{goal_id}/
+- [ ] Bead TOML is written to disk with status = "in_progress"
+- [ ] Conductor invokes claude -p with the assembled system prompt (verify via logs)
+- [ ] Bead status transitions to "completed" on agent success
+- [ ] Bead output is written to disk
+
+Recovery test:
+- [ ] Kill conductor mid-execution, restart it
+- [ ] Conductor resumes from disk state (no bead is lost or duplicated)
+
+Queue integration:
+- [ ] A queue item from inbox/ can be submitted as a conductor goal
+- [ ] The item moves to active/ on submission and back to completed on success
+
+If any of the above fail, produce a scoped bug item for each failure mode. Do not fix
+inline — document findings and surface them as new queue items.
+"""
+
+links = [
+  "core/conductor/src/index.ts",
+  "core/conductor/src/mayor.ts",
+  "core/conductor/src/polecat.ts",
+  "core/conductor/src/runner.ts",
+  "CLAUDE.md",
+  "context/projects/evergreen-terrace.toml"
+]

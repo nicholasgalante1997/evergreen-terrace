@@ -1,0 +1,67 @@
+[item]
+id = "b1e9a3f7-7c5d-4b02-2e4a-df0178602308"
+title = "stale p3 projects: disposition sweep for pgz, sleepy-dogs, anti-react, nodext4"
+project = "evergreen-terrace"
+type = "pm"
+priority = "p3"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "director"
+delegated_at = ""
+
+[context]
+description = """
+Four p3 projects are in limbo with no explicit disposition — all score at-risk (50/100)
+due to stale context and no recent activity. Each needs a one-time decision: archive,
+park with revival conditions, or continue with a scoped next step.
+
+pgz (~/dev/.Project-South-Park/pgz):
+  Rust CLI for local Ollama-based coding assistance. Last commit Jan 2026. Likely
+  superseded by the nemotron MCP + Claude Code workflow now in active use. Strong
+  archive candidate.
+
+sleepy-dogs (~/dev/experiments/sleepy-dogs):
+  Published npm package (sleepydogs). Zero-dependency JS utility library. Last commit
+  June 2025. Published and presumably stable. Uses pnpm (predates bundt conventions).
+  Decision: keep as stable/published with no active development (maintenance mode),
+  or migrate to bun + changesets and roll into @bundt scope.
+
+anti-react (~/dev/.Project-Anti-React):
+  Vanilla UI framework experiment. Last commit Nov 2025. Phase marked stale. Bun + Rust
+  hybrid. Related philosophically to arcturus-jr's anti-React stance. Decision: archive
+  or absorb learnings into a future bundt package.
+
+nodext4 (~/dev/.Project-Bun-Ext4-Filesystem/nodext4):
+  JS implementation of ext4 filesystem spec. Last commit June 2025. Phase marked stale.
+  Potential residual value as reference for Agartha's filesystem layer. Decision: archive
+  with a note, or park with a link from agartha context.
+
+The director agent is appropriate here — this is a scope pressure + prioritization
+challenge, not a scoping or implementation task.
+"""
+
+acceptance = """
+For each of the four projects (pgz, sleepy-dogs, anti-react, nodext4):
+- [ ] Review the actual state of the project (read source, commit history)
+- [ ] Apply scope pressure: what would it take to make this active again? Is that realistic?
+- [ ] Deliver a disposition: archive | park-with-revival-conditions | continue-scoped
+- [ ] For archive: update TOML to health=stale, add archival note
+- [ ] For park: update TOML to phase=on-hold, add revival condition note
+- [ ] For continue: produce one concrete next-step queue item
+
+Aggregate output: all four TOMLs updated with final disposition, no project left
+in ambiguous limbo.
+"""
+
+links = [
+  "context/projects/pgz.toml",
+  "context/projects/sleepy-dogs.toml",
+  "context/projects/anti-react.toml",
+  "context/projects/nodext4.toml",
+  "~/dev/.Project-South-Park/pgz/",
+  "~/dev/experiments/sleepy-dogs/",
+  "~/dev/.Project-Anti-React/",
+  "~/dev/.Project-Bun-Ext4-Filesystem/nodext4/"
+]

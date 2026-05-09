@@ -1,0 +1,45 @@
+[item]
+id = "c2d8b4e6-1f3a-4c07-7d9b-eb5823047803"
+title = "@bundt/cleo: identify and resolve registry launch prerequisites"
+project = "bundt"
+type = "pm"
+priority = "p1"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "pm"
+delegated_at = ""
+
+[context]
+description = """
+`@bundt/cleo` is pre-release. The headless task runner, TUI, BCP integration, and agent
+lifecycle are implemented. The registry is not yet live — this has been the stated blocker
+for some time with no explicit list of what 'registry not yet live' actually requires.
+
+BCP (bit-context-protocol) is `@bundt/cleo`'s first-class feature via `cleo run --bcp`.
+The alignment between the BCP RFC v0.1.0 and its reference implementation should be
+verified as part of this scope — if there is drift, it blocks the registry launch.
+
+This item produces a concrete, ordered prerequisite list for the registry launch.
+"""
+
+acceptance = """
+- [ ] Document what "registry" means in cleo's context — npm publish under @bundt scope,
+      a custom registry, or something else
+- [ ] Audit @bundt/cleo's pre-release state: what is implemented, what is stubbed,
+      what has known bugs
+- [ ] Verify BCP reference implementation is aligned with RFC v0.1.0 spec (RFC.txt)
+      — if not, document delta and create a scoped cleanup item
+- [ ] Identify any missing features that would constitute a launch blocker vs. post-launch
+- [ ] Identify any documentation gaps that would block a public-facing launch
+- [ ] Produce ordered prerequisite list: P0 blockers vs. P1 polish vs. deferred
+- [ ] Output: one queue item per launch blocker, ready for delegation to eng-mid
+"""
+
+links = [
+  "skills/bundt-context/SKILL.md",
+  "~/dev/bundt/packages/cleo/",
+  "~/dev/.RFCs/bit-context-protocol/RFC.txt",
+  "context/projects/bit-context-protocol.toml"
+]

@@ -1,0 +1,48 @@
+[item]
+id = "a8c4f2d6-5e9b-4a03-3d1f-cf9067491207"
+title = "nix-rails: scope Phase 2 or formally park the project"
+project = "nix-rails"
+type = "pm"
+priority = "p2"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "pm"
+delegated_at = ""
+
+[context]
+description = """
+nix-rails Phase 1 MVP shipped January 5, 2026. Phase 2 (database support + Docker
+integration) has been in 'planned' state for four months without any scoping or commits.
+The project is listed as active-feature but behaves as parked.
+
+nix-rails is a force-multiplier for the rest of the portfolio: if Phase 2 ships, it
+accelerates scaffolding for any new Bun/Turbo project (the dominant stack here). But
+four months of non-movement suggests either the MVP covers the actual need or the Phase
+2 scope is ambiguous enough that it hasn't been started.
+
+This item is a binary decision: scope Phase 2 as real work, or formally downgrade to
+p3/on-hold and stop carrying it as an active project. Both outcomes are valid.
+"""
+
+acceptance = """
+- [ ] Read .claude/implementation-status.md to assess Phase 1 completeness
+- [ ] Assess Phase 1 usage: has nix-rails actually been used to scaffold any project
+      in the past 4 months? (check if any repo shows nix-rails scaffolding fingerprints)
+- [ ] Evaluate Phase 2 scope: what would database support + Docker integration actually
+      require? Is the scope well-defined or still vague?
+- [ ] Make the binary call:
+  Option A — SCOPE: Produce a concrete Phase 2 task list, update priority accordingly,
+    create one queue item per Phase 2 feature
+  Option B — PARK: Update context/projects/nix-rails.toml to priority=p3, phase=on-hold,
+    add a note on why and under what conditions it would be revived
+
+- [ ] Either way, the project's actual state must match its TOML state after this item closes
+"""
+
+links = [
+  "~/dev/.Project-NixRails/nix-rails/",
+  "~/dev/.Project-NixRails/nix-rails/.claude/implementation-status.md",
+  "context/projects/nix-rails.toml"
+]

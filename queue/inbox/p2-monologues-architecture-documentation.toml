@@ -1,0 +1,49 @@
+[item]
+id = "f3b7e4c1-8d2a-4f04-4b9c-be8956380106"
+title = "monologues: explore and document full architecture"
+project = "monologues"
+type = "pm"
+priority = "p2"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "pm"
+delegated_at = ""
+
+[context]
+description = """
+Monologues is the most commit-active project in the portfolio right now outside of
+evergreen-terrace — 6 commits in the last 14 days implementing SPEC_01 through SPEC_06
+(auth service, casts API, Vite web app). But the context TOML still describes it as
+'full stack unknown — needs deeper exploration,' which means there's no useful context
+for future queue items or delegation.
+
+Current known facts:
+- Turbo monorepo with Docker + docker-compose
+- auth.db and casts.db (SQLite persistence, two separate databases)
+- smoke-test.sh for automated service validation
+- SPEC_01–SPEC_06 drafted and being implemented (auth, casts, web app layers)
+- Purpose inferred as podcast/media platform ('monologues' + 'casts')
+
+This item produces a documented architecture snapshot suitable for the context TOML
+and future PM/eng delegation. Also the right time to make a priority call — this
+project is running at p1 velocity with a p2 designation.
+"""
+
+acceptance = """
+- [ ] Read apps/ directory structure and document each service (name, port, purpose,
+      tech stack, key routes)
+- [ ] Document the data model — what is in auth.db vs. casts.db (tables, relationships)
+- [ ] Identify the SPEC series: how many specs exist, which are implemented, which remain
+- [ ] Document the monorepo topology: shared packages, build pipeline, Docker topology
+- [ ] Assess the actual purpose of the project — confirm or correct the podcast/media inference
+- [ ] Priority review: given actual activity, should this move to p1?
+- [ ] Update context/projects/monologues.toml with accurate architecture notes
+- [ ] Output: updated TOML and a brief architecture summary suitable for future PM items
+"""
+
+links = [
+  "~/dev/.Monologues/",
+  "context/projects/monologues.toml"
+]

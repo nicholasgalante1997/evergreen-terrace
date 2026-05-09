@@ -1,0 +1,59 @@
+[item]
+id = "d9f5c3a7-2e4b-4d06-6c8d-fc6934158904"
+title = "foresight: implement Phase 2 analysis engine in foresight-core"
+project = "foresight"
+type = "feature"
+priority = "p1"
+created = "2026-05-08T00:00:00"
+source = "sentinel"
+
+[delegation]
+agent = "eng-mid"
+delegated_at = ""
+
+[context]
+description = """
+Phase 1 is complete: `foresight-agent` polls sysinfo every 30s, stores snapshots to
+SQLite via `foresight-db`, and runs idempotent migrations on startup. The binary is
+working and data is accumulating.
+
+Phase 2 adds the analysis layer that makes the collected data useful:
+- `foresight-core/src/analysis/` — trend detection over snapshot history
+- Threshold logic (per-metric configurable thresholds)
+- Nudge trigger conditions (what state combination causes a nudge to fire)
+- Nudge delivery in `foresight-agent` (stdout for now; Tauri widget is Phase 3)
+
+The Cargo workspace has four crates: foresight-core (models, analysis), foresight-db
+(SQLite, rusqlite), foresight-agent (binary), foresight-widget (Tauri, Phase 3 stub).
+The analysis crate is the correct home for this logic per the existing architecture.
+"""
+
+acceptance = """
+- [ ] `foresight-core/src/analysis/` module created with:
+  - [ ] `Snapshot` → `TrendWindow` aggregation (rolling N-snapshot window)
+  - [ ] Per-metric threshold definitions (CPU %, memory %, configurable)
+  - [ ] `analyze(snapshots: &[Snapshot]) -> Vec<Nudge>` pure function
+  - [ ] `Nudge` type with severity (info | warn | critical) and plain-language message
+
+- [ ] Nudge delivery in `foresight-agent`:
+  - [ ] After each snapshot poll cycle, run analysis against recent snapshot window
+  - [ ] Print nudges to stdout with timestamp and severity prefix
+  - [ ] Deduplicate: do not re-emit the same nudge class within a cooldown window (5 min)
+
+- [ ] At least three nudge conditions implemented:
+  - [ ] CPU sustained above threshold for N consecutive snapshots
+  - [ ] Memory above threshold
+  - [ ] Rapid memory growth trend (slope-based detection)
+
+- [ ] `cargo clippy -- -D warnings` clean
+- [ ] `cargo test` passes — unit tests for `analyze()` with fixture snapshot sequences
+- [ ] Running `foresight-agent` with simulated high-CPU load produces a nudge within 2 poll cycles
+- [ ] Analysis is side-effect free — `analyze()` is a pure function, no DB writes
+"""
+
+links = [
+  "skills/foresight-context/SKILL.md",
+  "~/dev/foresight/",
+  "~/dev/foresight/foresight-core/src/",
+  "~/dev/foresight/foresight-agent/src/"
+]
