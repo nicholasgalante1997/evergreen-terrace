@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -re '.tool_input.file_path // \"\"' | grep -qE '/agents/|/skills/|/steering/' && cd /home/nicks-dgx/dev/evergreen-terrace && bun scripts/sync-agents.ts; true"
+          }
+        ]
+      }
+    ]
+  }
+}
