@@ -4,101 +4,60 @@ title: Skills
 
 # Skills
 
-Skills are shared knowledge bases that agents pull from on demand. They live in `skills/` and are referenced in agent definitions. A skill is a `SKILL.md` file — structured documentation that an agent reads before acting in a specific domain.
+Skills are shared knowledge bases that agents load into their system prompts. They live in `skills/{name}/SKILL.md` and are referenced in each agent's `agent.json`. A skill is read at invocation time — the conductor reads them when building the system prompt for a bead execution.
 
 ## `nick-voice`
 
-**Path:** `skills/nick-voice/SKILL.md`
+**Path:** `skills/nick-voice/SKILL.md`  
+**Used by:** `voice`, `pm`, `stakeholder`
 
-The voice model for Nick's written register. Built from writing samples across emails, Webex messages, technical blog posts, and workplace communication.
+The voice model for Nick's written register. Built from writing samples across emails, technical documentation, and blog posts.
 
-Covers:
-- Sentence structure and rhythm
-- Register and code-switching across contexts
-- How to state opinions directly
-- Technical explanation patterns
-- What to strip from AI-generated output (filler phrases, passive voice, over-structured responses)
-- Format rules by context type
-- Transformation examples with before/after
-
-Used by: `voice`, `pm`, `stakeholder`
+Covers sentence structure, register, direct opinion-stating patterns, what to strip from AI-generated output (filler phrases, passive voice, over-structured responses), and format rules by context type (email, PR description, stakeholder update, blog post).
 
 ---
 
 ## `nick-conventions`
 
-**Path:** `skills/nick-conventions/SKILL.md`
+**Path:** `skills/nick-conventions/SKILL.md`  
+**Used by:** `eng-senior`, `eng-mid`, `eng-junior`, `pm`
 
-Code conventions and patterns observed across Nick's active projects. Workers pull from this to ensure generated code matches the existing codebase style.
+Code conventions observed across the active project portfolio. Engineering agents load this before generating any code.
 
-Covers:
-- Runtime and tooling (Bun-first, pnpm for fidget-tokens, Turbo)
-- TypeScript conventions (interfaces vs types, naming, imports, error handling, async)
-- React conventions (functional components, `React.memo`, state management, styling)
-- CLI conventions (Springfield pattern: `commander`/`cac`, `inquirer`, `chalk`)
-- File and directory structure (`lib/`, `src/`, `bin/`, `out/`)
-- Testing (Jest for Springfield, Vitest for newer projects, Playwright for E2E)
-- What to avoid (`any`, default exports for utilities, inline styles, `console.log` in commits)
-
-Used by: `eng-senior`, `eng-mid`, `eng-junior`, `pm`
+Covers runtime (Bun-first), TypeScript conventions (interfaces, imports, error handling, async patterns), React patterns (functional only, `React.memo`, vanilla CSS BEM), CLI patterns, file structure, and what to avoid (`any` types, default exports for utilities, inline styles).
 
 ---
 
-## `springfield-context`
+## `bundt-context`
 
-**Path:** `skills/springfield-context/SKILL.md`
+**Path:** `skills/bundt-context/SKILL.md`  
+**Used by:** `eng-senior`, `eng-mid` (when working on bundt packages)
 
-Deep context for the Springfield code intelligence platform. Read before any task touching `agent-tools-prototype-workspace`.
+Deep context for the `bundt` OSS tooling monorepo (`~/dev/bundt`). Read before any task touching `@bundt/*` packages.
 
-Covers:
-- What Springfield is and what it analyzes
-- Full package ecosystem (`@springfield-models`, `@springfield-processes`, `@springfield-types`, `@springfield-constants`, `@springfield-utils`, `@springfield-state`, `@springfield-configs`)
-- Core applications with ports (CLI, API, DB, dump, docsify, MCP, web)
-- Data pipeline phases and commands (`duff-exec setup:clone`, `graph:json`, `react:json`, `fidget:json`, `graph:aggregate`)
-- Web application architecture (React 19, Webpack, MUI, D3, Zustand, TanStack Query, GraphQL)
-- Component and page patterns (Component/View split, `React.memo`, `pipeline` HOC, path aliases)
-- CLI architecture (`commands/`, `workers/`, `sqlite3/`, `prompts/`)
-- MCP server structure
-- Existing agents in Springfield's `.kiro/agents/`
-- Key constraints (never mutate dump data, use `@springfield-constants` for paths, `spawnAsync` for subprocesses)
-- All 67 dump domain directories
-
-Used by: `eng-senior`, `eng-mid`, `eng-junior`
+Covers the package ecosystem (`@bundt/prev`, `@bundt/cleo`, `@bundt/hateoas`, `@bundt/waavy`, `@bundt/signals`, `@bundt/dxdocs`), the `@bundt/prev` engine model (Fragment/Frame/Session/Binding/DataSource), BCP integration in `@bundt/cleo`, versioning via Changesets, and key constraints.
 
 ---
 
-## `fidget-context`
+## `foresight-context`
 
-**Path:** `skills/fidget-context/SKILL.md`
+**Path:** `skills/foresight-context/SKILL.md`  
+**Used by:** `eng-senior`, `eng-mid` (when working on foresight)
 
-Deep context for the Fidget/Kite design system. Read before any task involving design tokens, CSS variables, component styling, or Figma integration.
+Deep context for the `foresight` Rust/Tauri resource management tool (`~/dev/foresight`). Read before any task in the foresight Cargo workspace.
 
-Covers:
-- Three-layer architecture (tokens → CSS → components)
-- Repository structure (`core/tokens`, `core/css`, `core/components`, `core/bin`, `packages/`)
-- Token pipeline (Style Dictionary → CSS custom properties, SCSS, ESM/CJS JS, iOS, Android)
-- Component architecture (Component/View split, available components, `ThemeProvider`, `clsx`)
-- CSS foundation and variable naming (`--fidget-{category}-{name}`)
-- Figma integration and sync pipeline
-- Build system (Style Dictionary, esbuild, PostCSS, Vitest, Storybook, Changesets)
-- Dependency graph
-- Key constraints (don't modify `libs/fidget` or `libs/kite-tokens` submodules, pnpm not bun)
-
-Used by: `eng-senior`, `eng-mid`
+Covers the four-crate architecture (`foresight-core`, `foresight-db`, `foresight-agent`, `foresight-widget`), Phase 1 completion state (polling, SQLite snapshots, migrations), Phase 2 scope (analysis engine, nudge delivery), and key dependencies (tokio, rusqlite, thiserror, tracing, serde).
 
 ---
 
-## `agent-os-domain`
+## Adding a skill
 
-**Path:** `skills/agent-os-domain/SKILL.md`
+Create `skills/{name}/SKILL.md` with structured domain knowledge. Then add the skill name to the relevant agent's `agent.json`:
 
-Domain knowledge for agent-os — Charter's telecom SaaS employee dashboard. Read before working on any task involving agent-os feature areas or business context.
+```json
+{
+  "skills": ["nick-conventions", "your-new-skill"]
+}
+```
 
-Covers:
-- What agent-os is (CSR dashboard, MFE architecture, mission-critical)
-- Technology context (React MFE, Fidget/Kite migration, MUI legacy, Spectrum Flow CI/CD)
-- Full 67-domain feature map organized by business function (account, billing, ordering, troubleshooting, etc.)
-- Key business concepts (CSR, handle time, MFE, Fidget adoption, Spectrum Flow)
-- What Springfield provides about agent-os (component inventory, Fidget adoption, MUI usage, dependency graphs)
-
-Used by: `eng-senior`, `eng-mid`, `stakeholder`
+Run `bun run sync-agents` to push the updated agent definition to `~/.claude/agents/`.

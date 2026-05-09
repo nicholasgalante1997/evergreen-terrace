@@ -1,6 +1,6 @@
 export default {
   title: "evergreen-terrace",
-  description: "Personal engineering org — agent team, work queue, metrics, and parallel execution for a one-person shop operating at principal scope.",
+  description: "Personal engineering org — agent team, work queue, momentum sentinel, and parallel conductor for a one-person shop at principal scope.",
 
   navigation: [
     { type: "page", path: "/", title: "Introduction" },
@@ -11,9 +11,9 @@ export default {
       title: "Core Services",
       items: [
         { type: "page", path: "/queue", title: "Work Queue" },
-        { type: "page", path: "/metrics", title: "Metrics" },
         { type: "page", path: "/sentinel", title: "Sentinel" },
         { type: "page", path: "/conductor", title: "Conductor" },
+        { type: "page", path: "/metrics", title: "Metrics" },
         { type: "page", path: "/desktop", title: "Desktop App" },
       ],
     },

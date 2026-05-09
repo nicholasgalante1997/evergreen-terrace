@@ -4,125 +4,132 @@ title: Work Queue
 
 # Work Queue
 
-The work queue is the operational backbone of evergreen-terrace. It tracks every piece of work — from rough ideas to in-flight agent tasks — as TOML files on disk, served over a lightweight HTTP API.
+The work queue is the operational backbone of evergreen-terrace. It tracks every piece of work as TOML files on disk, served over a lightweight HTTP API. The web dashboard is the primary interface; the API is available for scripting and integration.
 
-## Data Model
+## Lifecycle
+
+```
+queue/inbox/   →   queue/active/   →   queue/completed/
+    ↑                   ↑
+    └── return ─────────┘
+```
+
+Items enter the inbox from four sources: manual TOML files, the PM agent, sentinel findings, or external integrations (Jira, GitLab). Dispatching an item moves it atomically from `inbox/` to `active/`. Completing it moves it to `completed/`. Returning it moves it back to `inbox/`.
+
+## Data model
 
 Each work item is a TOML file with three sections:
 
 ```toml
 [item]
-id = "abc-001"                          # UUID or human-readable slug
-title = "Add dark mode to web dashboard"
-project = "evergreen-terrace"           # Must match a context/projects/ entry
-type = "feature"                        # feature | bug | research | design | pm | ops
-priority = "p1"                         # p0 | p1 | p2 | p3
-created = "2026-05-08T09:00:00.000Z"   # ISO datetime
-source = "manual"                       # manual | sentinel | jira | gitlab
+id = "a4f1c8d2-3b7e-4a09-9e5f-bc2301847601"  # UUID
+title = "deck-cli: stress test and spec acceptance verification"
+project = "deckvault"                           # must match context/projects/{name}.toml
+type = "ops"                                    # feature | bug | research | design | pm | ops
+priority = "p0"                                 # p0 | p1 | p2 | p3
+created = "2026-05-08T00:00:00"                 # ISO datetime
+source = "sentinel"                             # manual | sentinel | jira | gitlab
 
 [delegation]
-agent = ""                              # Which agent is handling this (empty = unassigned)
-delegated_at = ""                       # ISO datetime when delegation occurred
+agent = "eng-mid"        # which agent handles this
+delegated_at = ""        # set by queue-server when dispatched
 
 [context]
-description = "The web dashboard currently has no dark mode..."
-acceptance = "Dark mode toggle works, persists across sessions, matches system preference by default."
-links = []                              # Relevant URLs or file paths
+description = """
+Full context for why this work exists, what the current state is,
+and any background the agent needs.
+"""
+acceptance = """
+- [ ] cargo clippy -- -D warnings is clean
+- [ ] cargo test passes with no regressions
+- [ ] ./dist/johto.mjs --help prints usage
+"""
+links = [
+  ".claude/specs/deck-cli/OVERVIEW.md",
+  "apps/deck-cli/src/"
+]
 ```
 
-### Priority Levels
+### Priority levels
 
 | Priority | Meaning |
 |----------|---------|
-| `p0` | Drop everything. Blocking or production-impacting. |
-| `p1` | High. Should be addressed this sprint. |
-| `p2` | Medium. Scheduled work. |
-| `p3` | Low. Nice to have, or explicitly deprioritized. |
+| `p0` | Drop everything — blocking or production-impacting |
+| `p1` | High — active development, should move this week |
+| `p2` | Medium — scheduled work, will get to it |
+| `p3` | Low — backlog, nice to have, or explicitly parked |
 
-### Item Types
+### Item types
 
-| Type | Used For |
+| Type | Used for |
 |------|---------|
-| `feature` | New functionality |
-| `bug` | Defect or regression |
-| `research` | Investigation, spike, or discovery |
-| `design` | Design work, spec, or Figma deliverable |
-| `pm` | Product management work (PRD, backlog grooming) |
-| `ops` | Infrastructure, tooling, or process work |
+| `feature` | New functionality — triggers review gate in conductor |
+| `bug` | Defect or regression — triggers review gate |
+| `ops` | Infrastructure, tooling, config — triggers review gate |
+| `pm` | Planning, PRDs, backlog work — auto-completes in conductor |
+| `research` | Investigation, spike, analysis — auto-completes in conductor |
+| `design` | Design specs, Figma work — review gate enabled by default |
 
-## Queue Server
+The review gate means: when the conductor finishes executing a `feature`, `bug`, or `ops` ticket, the bead enters `review_pending` status and requires your explicit approval before the item is marked complete. This allows you to review the diff before anything is counted as done.
 
-The queue server (`core/queue-server`) is a Bun HTTP server that reads and writes the TOML files in `queue/inbox/` and `queue/active/`.
+## Queue server API
 
-### Path Resolution
+Runs on `http://localhost:2727`.
 
-The server resolves queue paths from `process.env.QUEUE_ROOT` with a fallback to `process.cwd()`. Set `QUEUE_ROOT` to the repo root in your `.env`:
+### Read endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | `{ ok: true }` |
+| `GET` | `/queue` | Full state: `{ inbox, active, completed }` |
+| `GET` | `/queue/inbox` | Pending items only |
+| `GET` | `/queue/active` | In-flight items only |
+| `GET` | `/queue/completed` | Completed items |
+
+### Mutation endpoints
+
+**`POST /queue/delegate`** — move inbox → active, assign agent, fire conductor
+
+```json
+{ "id": "a4f1c8d2-...", "agent": "eng-mid" }
+```
+
+Returns `{ "ok": true }`. Also notifies the conductor to start work if it is running.
+
+**`POST /queue/complete`** — move active → completed
+
+```json
+{ "id": "a4f1c8d2-..." }
+```
+
+Called automatically by the conductor when approving a bead. Can also be called manually.
+
+**`POST /queue/return`** — move active → inbox
+
+```json
+{ "id": "a4f1c8d2-..." }
+```
+
+Used when work needs to be re-evaluated or the agent assignment needs to change.
+
+## Path resolution
+
+The queue server resolves file paths from `QUEUE_ROOT` (env variable, defaults to `process.cwd()`). Set this to the absolute repo root:
 
 ```sh
-QUEUE_ROOT=/Users/you/dev/evergreen-terrace
+QUEUE_ROOT=/home/nicks-dgx/dev/evergreen-terrace
 ```
-
-### API Reference
-
-**`GET /queue`**
-
-Returns the full queue state.
-
-```json
-{
-  "inbox": [...],
-  "active": [...]
-}
-```
-
-**`GET /queue/inbox`**
-
-Returns pending items only.
-
-**`GET /queue/active`**
-
-Returns in-flight items only.
-
-**`POST /queue/delegate`**
-
-Moves an item from inbox to active and assigns an agent.
-
-```json
-{
-  "id": "abc-001",
-  "agent": "eng-mid"
-}
-```
-
-Returns `{ "ok": true }` on success, `404` if the item isn't found in inbox.
 
 ## Dashboards
 
-### Terminal Dashboard (TUI)
+### Web dashboard
+
+The primary interface. Three-pane layout: sidebar item list, center detail panel, right agent feed. See the [User Manual](https://github.com) or `USER_MANUAL.md` in the repo root for a full walk-through.
+
+### Terminal dashboard (TUI)
 
 ```sh
 bun run tui
 ```
 
-Renders inbox and active sections sorted by priority with ANSI color coding. Press `r` to refresh, `q` to quit.
-
-Priority colors: `p0` red · `p1` yellow · `p2` cyan · `p3` gray
-
-### Web Dashboard
-
-```sh
-cd core/dashboard/web && bun run dev
-```
-
-Opens at `http://localhost:2728`. Polls the queue server every 30 seconds. Refresh button for on-demand updates.
-
-## Inbox Management
-
-Items enter the inbox from four sources:
-
-- **Manual** — TOML files dropped directly into `queue/inbox/`
-- **PM agent** — Creates items from PRDs and stakeholder asks
-- **Sentinel** — Surfaces stale projects as actionable items (planned)
-- **Jira / GitLab** — Synced via MCP integrations (planned)
-
-Items move to `queue/active/` when delegated via `POST /queue/delegate`. The file is moved atomically — the inbox file is deleted after the active file is written.
+Priority-colored list view. Press `r` to refresh, `q` to quit. Useful for a quick health check from the terminal without opening a browser.

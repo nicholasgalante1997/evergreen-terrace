@@ -6,11 +6,12 @@ title: Getting Started
 
 ## Prerequisites
 
-- Bun `>=1.3.13`
-- Kiro CLI (for invoking agents)
-- GitLab access to `gitlab.spectrumflow.net`
+- **Bun** `>= 1.3.13` — `bun --version`
+- **Claude Code CLI** — `claude --version` must return a path; this is how agents are invoked
+- **mise** (optional) — `mise --version`; provides the task runner interface
+- `ANTHROPIC_API_KEY` set in your environment
 
-## Clone and Install
+## Install
 
 ```sh
 git clone <repo-url> evergreen-terrace
@@ -18,122 +19,113 @@ cd evergreen-terrace
 bun install
 ```
 
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in the values:
+## Environment
 
 ```sh
 cp .env.example .env
 ```
 
+Open `.env` and set `QUEUE_ROOT`:
+
 ```sh
-# Required for queue-server path resolution
+# Required — tells all services where to find queue/, context/, and beads/
 QUEUE_ROOT=/path/to/evergreen-terrace
 
-# Jira (optional — needed for PM agent Jira integration)
-JIRA_URL=https://charter.atlassian.net
-JIRA_EMAIL=your-email@charter.com
-JIRA_API_TOKEN=
-
-# GitLab (optional — needed for engineering agent MR creation)
-GITLAB_URL=https://gitlab.spectrumflow.net
-GITLAB_TOKEN=
-
-# Figma (optional — needed for design agent spec reading)
-FIGMA_ACCESS_TOKEN=
+# Optional — override the claude binary path if not on $PATH
+CLAUDE_PATH=/usr/local/bin/claude
 ```
 
-`QUEUE_ROOT` is the only required variable. It tells the queue server where to find the `queue/inbox` and `queue/active` directories. If unset, it defaults to `process.cwd()` — which works if you run the server from the repo root.
+`QUEUE_ROOT` defaults to `process.cwd()` if unset, which works when running from the repo root.
 
-## Running the Queue Server
+## Start everything
 
 ```sh
-bun run queue
+bun run start
+# or: mise run start
 ```
 
-The server starts on `http://localhost:2727`. Endpoints:
+This builds all packages and starts all services:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/queue` | Full queue state (inbox + active) |
-| `GET` | `/queue/inbox` | Pending items |
-| `GET` | `/queue/active` | In-flight items |
-| `POST` | `/queue/delegate` | Move item from inbox to active, assign agent |
+| Service | Port |
+|---------|------|
+| queue-server | 2727 |
+| web dashboard | 2728 |
+| metrics | 2729 |
+| sentinel | 2730 |
+| conductor | 2731 |
 
-## Running the Terminal Dashboard
+After ~3 seconds, your browser opens to `http://localhost:2728`.
 
-In a second terminal:
+**Skip the rebuild** (after the first run):
 
 ```sh
-bun run tui
+bun run start:dev
+# or: mise run start:dev
 ```
 
-Press `r` to refresh, `q` to quit.
+## Remote access
 
-## Running the Web Dashboard
+If you're accessing the DGX remotely over SSH, use the tunnel script on your laptop:
 
 ```sh
-cd core/web
-bun install
-bun run dev
+# Copy to your laptop once:
+scp nicks-dgx:~/dev/evergreen-terrace/scripts/tunnel.sh ~/bin/evergreen-tunnel
+chmod +x ~/bin/evergreen-tunnel
+
+# Run from your laptop whenever you want to access the dashboard:
+evergreen-tunnel
 ```
 
-Opens at `http://localhost:2728`. Polls the queue server every 30 seconds. Has two tabs: Queue and Metrics.
+This forwards all service ports to `localhost` on your laptop and opens the browser automatically.
 
-> The Metrics tab requires `core/metrics` to be running. It degrades gracefully if the metrics service is unreachable.
-
-## Running the Metrics Service
+## Running individual services
 
 ```sh
-bun run metrics
+bun run queue      # queue-server only — port 2727
+bun run sentinel   # sentinel server only — port 2730
+bun run metrics    # metrics only — port 2729
+bun run conductor  # conductor only — port 2731
+bun run dashboard  # web dashboard dev server — port 2728
+bun run tui        # terminal dashboard
 ```
 
-Starts on `http://localhost:2729`. Required for the Metrics tab in the web dashboard.
-
-## Running the Sentinel
-
-```sh
-bun run sentinel
-```
-
-In `on-demand` mode (default), runs once and exits. In `cron` mode, stays alive and fires on schedule. See `context/global.toml` to configure.
-
-## Invoking Agents
-
-Agents are Kiro agent definitions in `agents/`. Invoke them from within the repo using the Kiro CLI:
-
-```sh
-# Run the momentum sentinel
-kiro agent run momentum-sentinel
-
-# Run the PM agent with a task
-kiro agent run pm "Add dark mode support to the web dashboard"
-```
-
-Agents read from `context/`, `queue/`, `skills/`, and `steering/` automatically.
-
-## Adding a Work Item Manually
+## Adding a work item manually
 
 Create a TOML file in `queue/inbox/`:
 
 ```toml
 [item]
 id = "abc-001"
-title = "Investigate Neo4j connection pooling issue in springfield-api"
-project = "springfield"
-type = "bug"
+title = "Implement foresight Phase 2 analysis engine"
+project = "foresight"
+type = "feature"
 priority = "p1"
-created = "2026-05-08T09:00:00.000Z"
+created = "2026-05-08T00:00:00"
 source = "manual"
 
 [delegation]
-agent = ""
+agent = "eng-mid"
 delegated_at = ""
 
 [context]
-description = "springfield-api intermittently drops Neo4j connections under load. Observed in staging after the March deploy."
-acceptance = "Root cause identified, fix implemented, regression test added."
-links = []
+description = "Phase 1 is complete. Phase 2 adds the analysis engine..."
+acceptance = """
+- [ ] foresight-core/src/analysis/ module created
+- [ ] analyze() pure function implemented
+- [ ] cargo clippy -- -D warnings clean
+"""
+links = ["~/dev/foresight/foresight-core/src/"]
 ```
 
-The queue server picks it up immediately on the next read.
+The queue server picks it up on the next request — no restart required.
+
+## Syncing agents
+
+The 8 agent definitions in `agents/` are installed globally to `~/.claude/agents/` for use in any Claude Code session. They sync automatically via the PostToolUse hook in `.claude/settings.json` whenever you edit `agents/`, `skills/`, or `steering/` through Claude Code.
+
+Manual sync:
+
+```sh
+bun run sync-agents
+# or: mise run sync-agents
+```

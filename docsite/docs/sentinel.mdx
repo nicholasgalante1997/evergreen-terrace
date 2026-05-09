@@ -4,15 +4,30 @@ title: Sentinel
 
 # Sentinel
 
-Cron runner for the momentum sentinel agent. Reads the schedule from `context/global.toml`, invokes the sentinel agent on schedule, writes reports to `context/reports/`, and notifies the metrics service.
+The momentum sentinel scores all active projects on four dimensions and produces a ranked report. It runs as a persistent HTTP server in both `on-demand` and `cron` modes. You trigger it from the web dashboard or the terminal; it invokes `claude -p` with the momentum-sentinel agent and writes the output to disk.
 
 ## Running
 
 ```sh
 bun run sentinel
+# or: mise run sentinel
 ```
 
-When `mode = "on-demand"` (the default), the process exits immediately — use this to trigger a one-off run. When `mode = "cron"`, the process stays alive and fires on the configured schedule.
+The server starts on `http://localhost:2730` in both modes. It does not exit.
+
+## Triggering a run
+
+**From the web dashboard:** Sentinel tab → **Run Now**
+
+**From the terminal:**
+
+```sh
+mise run sentinel-run
+# or:
+curl -X POST http://localhost:2730/sentinel/run
+```
+
+A run invokes `claude -p` non-interactively with the momentum-sentinel agent system prompt and the current context as the user message. Duration is typically 30–90 seconds depending on the number of projects and git log sizes.
 
 ## Configuration
 
@@ -21,49 +36,55 @@ Set the mode in `context/global.toml`:
 ```toml
 [sentinel]
 last_run = ""
-mode = "on-demand"           # "on-demand" | "cron"
-cron_schedule = "0 8 * * 1-5"  # 8am weekdays — only used when mode = "cron"
+mode = "on-demand"             # "on-demand" | "cron"
+cron_schedule = "0 8 * * 1-5"  # weekdays at 8am — only used when mode = "cron"
 ```
+
+**`on-demand` (default):** The server stays alive but does not fire automatically. Runs only when `POST /sentinel/run` is called.
+
+**`cron`:** The server fires on the configured schedule using a tick loop (checks every 60 seconds). Also responds to `POST /sentinel/run` for on-demand runs between scheduled ones.
 
 ## Reports
 
 Each run writes a Markdown report to `context/reports/`:
 
 ```
-context/reports/
-└── sentinel-2026-05-08.md    # One file per run date
+context/reports/sentinel-2026-05-08.md
 ```
 
-Same-day runs overwrite the previous report for that date.
+Same-day runs overwrite the previous report for that date. The web dashboard Sentinel tab displays the latest report.
 
-## API Reference
+## Scoring model
 
-Runs on `http://localhost:2730`.
+Each project is scored 0–100 across four dimensions (0–25 each):
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/sentinel/latest` | Latest report as Markdown |
-| `GET` | `/sentinel/status` | `{ last_run, mode, next_run }` |
-
-## Scoring
-
-The sentinel scores each project on four dimensions (0–25 each):
-
-| Dimension | Signal |
-|-----------|--------|
-| Activity | Commit recency (last 3 / 7 / 14 / 14+ days) |
-| Queue Health | Inbox size and blocked items |
-| Priority Alignment | Stated priority vs. actual activity |
-| Context Freshness | Age of `last_touched` in project TOML |
+| Dimension | Signal | Scoring |
+|-----------|--------|---------|
+| **Activity** | Git commit recency | Last 3 days: 25 · Last 7 days: 20 · Last 14 days: 10 · 14+ days: 0 |
+| **Queue Health** | Inbox size and blocked items | ≤2 items, not blocked: 25 · 3–5 items: 15 · >5 or blocked: 5 · >10: 0 |
+| **Priority Alignment** | Stated priority vs. actual activity | p0/p1 with recent activity: 25 · p2/p3 low activity: 25 · p0/p1 no activity: 0 (MISALIGNMENT) · p2/p3 high activity: 15 |
+| **Context Freshness** | Age of `last_touched` in project TOML | Within 7 days: 25 · Within 14 days: 15 · Within 30 days: 5 · 30+ days: 0 |
 
 **Score interpretation:** 75–100 healthy · 50–74 at-risk · 0–49 stale
 
-After each run, `context/global.toml` is updated with `last_run` and each project TOML gets an updated `health` field.
+### Misalignment flag
 
-## Manual Override
+A p0 or p1 project with no commits in 14+ days receives a Priority Alignment score of 0 and is flagged as MISALIGNMENT in the report. This is the most actionable signal the sentinel produces — it means a high-priority project has been quietly abandoned or worked on without commits.
 
-Pass a priority override when invoking the agent directly:
+## Post-run updates
 
-```sh
-kiro agent run momentum-sentinel "treat springfield as p0 for this run"
-```
+After each run, the sentinel:
+
+1. Updates `sentinel.last_run` in `context/global.toml`
+2. Updates the `health` field in each project's TOML (`healthy`, `at-risk`, or `stale`)
+
+The sentinel does **not** modify `priority` or `manual_override` fields — those are yours.
+
+## API reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | `{ ok: true, mode: "on-demand" }` |
+| `GET` | `/sentinel/latest` | Latest report as `text/markdown`; 404 if no report exists yet |
+| `GET` | `/sentinel/status` | `{ last_run, mode, next_run, run_in_progress }` |
+| `POST` | `/sentinel/run` | Trigger an immediate run; returns `{ ok: true, length: N }` on success; 409 if already running |

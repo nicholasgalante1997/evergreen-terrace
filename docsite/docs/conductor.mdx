@@ -4,69 +4,139 @@ title: Conductor
 
 # Conductor
 
-Gastown-inspired parallel agent orchestrator. Nick describes a goal, the conductor breaks it into beads (atomic tasks), dispatches them to parallel agent workers, and manages a merge queue to prevent collisions. All state persists to disk — process restarts resume in-progress goals.
+The conductor is a parallel agent orchestrator. It receives queue items from the web dashboard, executes them non-interactively via `claude -p` in the correct project directory, streams output to the browser in real time, and applies a review gate for code-producing work.
 
 ## Running
 
 ```sh
 bun run conductor
+# or: mise run conductor
 ```
 
-Starts on `http://localhost:2731`.
+Starts on `http://localhost:2731`. The conductor is included when you run `bun run start`.
 
-## Concepts
+## The dispatch bridge
 
-**Bead** — an atomic unit of work. A TOML file with a task description, acceptance criteria, assigned worker role, and status. Stored in `context/beads/{goal_id}/`.
+When you click **Dispatch →** in the web dashboard:
 
-**Mayor** — receives a goal, calls `eng-senior` to decompose it into beads, identifies parallelism.
+1. The queue-server moves the item from `inbox/` to `active/`
+2. The queue-server fires `POST /conductor/dispatch { item }` — non-blocking, fail-safe
+3. The conductor creates a goal and bead in `context/beads/`
+4. The bead's working directory is set to the project's repo path
+5. `claude -p` is spawned in that directory with the item's description and acceptance as the prompt
+6. Output streams to `context/beads/{goal_id}/events-{bead_id}.jsonl` line by line
+7. The web dashboard subscribes to the SSE stream and displays the feed in real time
 
-**Polecat** — ephemeral worker. Picks up a bead, runs `kiro agent run {role}`, marks it complete or failed.
+If the conductor is not running when dispatch is called, the item still moves to active — it just has no associated bead. The agent feed shows "No conductor session."
 
-**Refinery** — merge queue. Serializes beads that share output files to prevent conflicts.
+## Working directory
 
-**Witness** — health monitor. Polls every 60 seconds, re-queues beads stalled for more than 5 minutes.
+**This is the most important constraint in the system.**
 
-## Submitting a Goal
+Every bead stores the path where `claude -p` will run:
+
+```toml
+[worker]
+cwd = "/home/nicks-dgx/dev/.Project-Johto/Pokemon"
+project = "deckvault"
+queue_item_id = "a4f1c8d2-..."
+```
+
+This is resolved at dispatch time from `context/projects/{project}.toml`:
+
+```toml
+[project]
+repo = "/home/nicks-dgx/dev/.Project-Johto/Pokemon"
+```
+
+If `repo` is missing from the project TOML, the bead runs in the evergreen-terrace directory — which is wrong for any ticket involving project-specific code. Verify this field before dispatching feature tickets.
+
+## Review gate
+
+Feature, bug, and ops tickets require human approval before completion. When the agent finishes, the bead enters `review_pending` status and the agent feed shows approve/reject controls.
+
+**Before approving:** review the actual changes in the project repo.
 
 ```sh
-curl -X POST http://localhost:2731/conductor/goal \
-  -H "Content-Type: application/json" \
-  -d '{"description": "Add dark mode to the web dashboard"}'
+cd /path/to/project
+git diff
+git status
 ```
 
-Returns a goal ID. The Mayor immediately begins decomposing the goal into beads.
+**Approve:** marks the bead completed, marks the queue item completed, queue-server moves it to `completed/`.
 
-## API Reference
+**Reject:** marks the bead failed. The item remains active. Retry is available.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/conductor/goal` | Submit a goal `{ description: string }` |
-| `GET` | `/conductor/goals` | List all goals and bead status |
-| `GET` | `/conductor/goal/:id` | Goal detail with all beads |
-| `POST` | `/conductor/bead/:id/retry` | Re-queue a failed bead |
+`pm` and `research` tickets auto-complete without a review gate — they produce planning documents, not code.
 
-## Bead State
+### Git constraint
+
+The agent system prompt in conductor mode includes an explicit instruction not to run any git write commands (`git commit`, `git push`, `git reset`, `git merge`, etc.). Agents may read git state. Approval in the dashboard does not commit anything — that is always yours.
+
+## Bead state
+
+All bead state persists to disk in `context/beads/`:
 
 ```
 context/beads/
-└── {goal_id}/
-    ├── goal.toml       # Goal description and overall status
-    ├── bead-001.toml   # Individual task
-    └── bead-002.toml
+└── goal-abc12345/
+    ├── goal.toml           # goal description and status
+    ├── bead-abc12345-001.toml  # the task
+    └── events-bead-abc12345-001.jsonl  # real-time output log
 ```
 
-Bead statuses: `pending` → `in_progress` → `completed` | `failed`
+Bead statuses: `pending` → `in_progress` → `review_pending` | `completed` | `failed`
 
-## Parallelism
+On conductor restart, any `in_progress` beads are reset to `pending` and re-dispatched. The events log up to the crash point is preserved.
 
-Beads with no shared `output_files` are dispatched concurrently up to `maxConcurrent` (default: 3). Beads that share output files are serialized by the Refinery.
+## Concepts
 
-## Nondeterministic Idempotence
+**Mayor** — the decomposition path. Receives a free-text goal via `POST /conductor/goal`, calls `eng-senior` to break it into atomic beads. Not used for queue-item dispatch (items are already atomic).
 
-Beads have acceptance criteria, not deterministic replay. If a bead fails and is retried, the worker may take a different approach — what matters is that the acceptance criteria are met.
+**Polecat** — the executor. Picks up a pending bead, runs `claude -p` with the role's system prompt in the bead's working directory, streams output to the events log, applies the review gate.
+
+**Refinery** — the merge queue. Beads that declare shared `output_files` are serialized to prevent conflicts. Beads with no overlapping outputs run in parallel up to `maxConcurrent` (default: 3).
+
+**Witness** — the health monitor. Checks every 60 seconds, resets beads that have been `in_progress` for more than 5 minutes back to `pending` for re-dispatch.
+
+## System prompt injection
+
+For queue-dispatched beads, the conductor injects the project's context TOML into the agent's system prompt:
+
+```
+{role AGENT.md}
+{skills}
+{steering docs}
+---
+## Project Context
+{content of context/projects/{project}.toml}
+---
+## Conductor Mode
+{git-write prohibition}
+## Task
+{description + acceptance criteria}
+```
+
+This gives the agent knowledge of the project's current phase, architecture notes, and next actions without requiring it to discover them from the codebase.
+
+## API reference
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | `{ ok: true }` |
+| `POST` | `/conductor/dispatch` | Dispatch a queue item `{ item: QueueItem }` |
+| `POST` | `/conductor/goal` | Submit a free-text goal for decomposition `{ description: string }` |
+| `GET` | `/conductor/goals` | List all goals and their bead status |
+| `GET` | `/conductor/goal/:id` | Goal detail with full bead list |
+| `GET` | `/conductor/queue-item/:id` | Find the bead associated with a queue item ID |
+| `GET` | `/conductor/bead/:id/stream` | SSE stream of bead events (`text/event-stream`) |
+| `POST` | `/conductor/bead/:id/approve` | Approve a `review_pending` bead → `completed` |
+| `POST` | `/conductor/bead/:id/reject` | Reject a `review_pending` bead → `failed` |
+| `POST` | `/conductor/bead/:id/retry` | Re-queue a `failed` bead → `pending` |
 
 ## Environment
 
 ```sh
-CONDUCTOR_ROOT=/path/to/evergreen-terrace   # Resolves context/beads/ path
+CONDUCTOR_ROOT=/path/to/evergreen-terrace   # defaults to QUEUE_ROOT or cwd
+CLAUDE_PATH=/usr/local/bin/claude           # defaults to "claude" on $PATH
 ```

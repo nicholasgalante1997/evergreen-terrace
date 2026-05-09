@@ -9,83 +9,69 @@ title: Roadmap
 Core infrastructure. The minimum viable team.
 
 - Queue server (Bun HTTP, TOML-backed, port 2727)
-- Terminal dashboard (TUI, priority-colored, r/q controls)
+- Terminal dashboard (TUI, priority-colored)
 - `@evergreen-terrace/common` — shared types and config
-- `context/` schema and project TOML files (springfield, fidget-tokens, adaptive-spirit, spectrum-ga-map)
-- `skills/nick-voice/` — voice model from writing samples
+- `context/` schema and project TOML files
+- `skills/nick-voice/` — voice model
 - `skills/nick-conventions/` — TypeScript/React/Bun patterns
 - `steering/` — code-style, architecture-principles, project-context
-- `agents/pm/` — PRD generation, Jira tickets, backlog management
+- `agents/pm/` — ticket authoring, backlog management
 - `agents/momentum-sentinel/` — on-demand project health scoring
 
 ---
 
-## Phase 2 — Voice + Engineering Team ✅
+## Phase 2 — Engineering Team ✅
 
-The full engineering org. Voice transform. Deep Springfield context.
+The full engineering org. Voice transform.
 
-- `skills/springfield-context/` — Springfield architecture deep dive
 - `agents/voice/` — human-readable transform pipeline
-- `agents/eng-senior/` — architecture decisions, PR review, ADR authoring
+- `agents/eng-senior/` — architecture decisions, PR review
 - `agents/eng-mid/` — feature implementation from spec
 - `agents/eng-junior/` — boilerplate, tests, scaffolding
 
 ---
 
-## Phase 3 — Full Team + Integrations ✅
+## Phase 3 — Full Team + Infrastructure ✅
 
-Stakeholder and director agents. Web dashboard. Live integrations.
+Stakeholder and director agents. Web dashboard. Metrics. Context layer.
 
-- `agents/stakeholder/` — status updates, business language translation
+- `agents/stakeholder/` — status updates, business language
 - `agents/director/` — scope pressure, prioritization challenge
-- `skills/fidget-context/` — Fidget/Kite design system knowledge
-- `skills/agent-os-domain/` — agent-os domain knowledge (67 feature domains)
-- `core/dashboard/web/` — Vite/React web dashboard (port 2728)
-- `integrations/jira/` — Jira MCP config and usage guide
-- `integrations/gitlab/` — GitLab MCP config and usage guide
-- `integrations/figma/` — Figma MCP config and usage guide
-- Cron mode documentation for momentum-sentinel
+- `core/web/` — Vite/React web dashboard (port 2728)
+- `core/metrics/` — metrics collection service (port 2729)
+- `core/sentinel/` — sentinel HTTP server (port 2730)
+- `core/conductor/` — parallel agent orchestrator (port 2731)
+- `core/desktop/` — Tauri v2 desktop app scaffold
+- `context/` — persistent project state, global priority ordering
+- `integrations/` — Jira, GitLab, Figma MCP setup guides
+- `docsite/` — `@bundt/dxdocs` documentation site
 
 ---
 
-## Phase 4 — Metrics, Dashboard Tracking, and Native Interface
+## Phase 4 — Conductor Bridge + Live Dashboard ✅
 
-Observability, analytics, and long-term platform evolution.
+Full queue-to-agent automation. Real-time agent feed. Review gate.
 
-### Metrics and Dashboard Tracking
+- **Conductor dispatch bridge** — dispatching a queue item now fires the conductor automatically; the conductor runs `claude -p` in the project's working directory
+- **Working directory resolution** — every bead stores the project's repo path from `context/projects/{project}.toml`; agents run in context
+- **Streaming events log** — bead output streams to `events-{bead_id}.jsonl` and is served as SSE to the browser
+- **Three-pane dashboard** — sidebar, item detail, agent feed pane with real-time output
+- **Review gate** — feature/bug/ops tickets enter `review_pending` after agent completion; requires explicit approve/reject
+- **Sentinel server fix** — sentinel now starts HTTP server in all modes; on-demand mode exposes `POST /sentinel/run`
+- **Queue lifecycle** — added `completed/` queue, return-to-inbox, complete endpoints
+- **Start script** — `bun run start` builds and starts all services, opens browser, handles graceful shutdown
+- **SSH tunnel script** — `scripts/tunnel.sh` for laptop → DGX port forwarding
+- **mise tasks** — full lifecycle task runner integration
+- **Workflow documentation** — `.claude/workflows/` with Model A and Model B guides
 
-- `core/metrics/` — metrics collection service
-  - Agent invocation counts and latency
-  - Queue throughput (items created, delegated, completed per day/week)
-  - Sentinel run history and score trends over time
-  - Per-project activity trends
-- Dashboard metrics views
-  - Queue velocity chart (items in/out over time)
-  - Project health history (sentinel scores over time)
-  - Agent utilization breakdown
-  - Work item age distribution
-- Metrics persistence — append-only TOML or SQLite in `context/metrics/`
-- Weekly digest — sentinel extended to produce trend data
+---
 
-### Cron-Based Sentinel
+## Phase 5 — Planned
 
-- `core/sentinel/` — Bun cron runner
-- Reads `cron_schedule` from `context/global.toml`
-- Writes reports to `context/reports/sentinel-{date}.md`
-- Queue server exposes latest report via `GET /sentinel/latest`
+Items that are scoped but not yet started.
 
-### Native Desktop Interface
-
-- Tauri wrapper around `core/dashboard/web/`
-  - Native macOS app
-  - System tray integration — queue count badge, quick-add work item
-  - Native notifications for sentinel alerts
-  - No new React code — same web dashboard, native shell
-- Offline-capable — reads from local TOML files without server
-
-### Parallel Execution (Gastown-style)
-
-- `core/conductor/` — Mayor/Polecats/Refinery/Witness orchestrator
-- Git-backed bead state (survives session restarts)
-- Nondeterministic idempotence — tasks have acceptance criteria, not deterministic replay
-- Parallel agent workers for high-throughput implementation sprints
+- **Cron sentinel digest** — weekly trend report (score deltas per project, queue velocity, suggested priority adjustments)
+- **Conductor decomposition display** — web UI for `POST /conductor/goal` free-text goals with bead tree visualization
+- **Desktop app** — Tauri v2 system tray integration with queue count badge and native notifications
+- **Review diff view** — inline diff display in the agent feed pane so you can review without opening a terminal
+- **Agent output routing** — explicit `output_files` tracking for conductor-dispatched beads so the review gate can surface specific files changed

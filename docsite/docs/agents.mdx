@@ -4,25 +4,45 @@ title: Agents
 
 # Agents
 
-Each agent owns one lane. Narrow scope produces predictable output and reduces review overhead. Agents produce drafts and proposals — Nick approves before anything ships.
+Eight role-scoped agents, each owning one lane. Narrow scope produces predictable output and reduces review overhead. Agents produce drafts and proposals — you approve before anything ships.
 
-All agents are Kiro agent definitions in `agents/`. They read from `steering/`, `skills/`, `context/`, and `queue/` automatically.
+All agents live in `agents/` as a pair of files:
+- `AGENT.md` — full instructions for the role
+- `agent.json` — conductor config: model, allowed tools, skills, steering references
 
-## Upstream Lane
+They are installed globally to `~/.claude/agents/` and available in any Claude Code session. The conductor uses them when executing queue items.
+
+## Invoking agents
+
+**From a Claude Code session:** mention the agent role in your message, or use `/agent-name` if Claude Code supports slash commands for registered agents.
+
+**From the conductor:** happens automatically when a queue item is dispatched — the item's `delegation.agent` field determines which agent runs.
+
+**Manual sync** (after editing `agents/`, `skills/`, or `steering/`):
+
+```sh
+bun run sync-agents
+# or: mise run sync-agents
+```
+
+---
+
+## PM lane
 
 ### `pm` — Product Manager
 
-Turns rough ideas, stakeholder asks, or problem statements into structured PRDs and Jira-ready tickets. Owns the backlog so Nick doesn't have to.
+Turns rough ideas, stakeholder asks, or problem statements into structured tickets. Writes TOML files directly to `queue/inbox/`.
 
 **Does:**
-- Clarifying questions (two rounds max), then produces a PRD
-- Breaks PRDs into Jira-ready tickets written to `queue/inbox/`
+- Clarifying questions (two rounds max), then produces a ticket
+- Breaks goals into multiple atomic tickets
 - Backlog review and prioritization against `context/global.toml`
 - Ticket grooming — identifies missing acceptance criteria
 
 **Does not:** Make architectural decisions. Estimate timelines. Touch code.
 
-**Skills used:** `nick-voice`, `nick-conventions`
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Write, Bash, Grep, Glob`
 
 ---
 
@@ -32,82 +52,91 @@ Translates technical work into business language. Writes status updates, escalat
 
 **Does:**
 - Status updates (done / in-progress / blocked / next)
-- Escalation summaries — four sentences: situation, impact, ask, consequence of inaction
-- Business language translation — outcomes not implementation details
-- Meeting prep — talking points and anticipated questions
+- Escalation summaries — situation, impact, ask, consequence of inaction
+- Business language translation — outcomes, not implementation details
 
-**Does not:** Spin bad news. Make commitments on Nick's behalf. Use jargon without translation.
+**Does not:** Spin bad news. Make commitments. Use jargon without translation.
 
-**Output:** Always routed through the `voice` agent before delivery.
+**Output:** Route through `voice` before delivery.
+
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Write, Bash, Grep, Glob`
 
 ---
 
 ### `director` — Director-Level Challenge
 
-Adversarial by design. Applies scope pressure, questions prioritization, and stress-tests decisions. Makes plans stronger before they hit real stakeholders.
+Adversarial by design. Applies scope pressure and stress-tests decisions.
 
 **Does:**
 - Scope pressure — finds the minimum version that delivers core value
 - Prioritization challenge — identifies weakest justification vs. highest impact
-- Decision stress-test — surfaces assumptions, reversibility, opportunity cost
+- Decision stress-test — surfaces assumptions and opportunity cost
 - Delivery reality check — most likely slip, dependency risks
 
-**Does not:** Make product decisions. Override Nick's final call. Challenge without reason.
+**Does not:** Make product decisions. Override your final call.
+
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Grep, Glob`
 
 ---
 
-## Engineering Lane
+## Engineering lane
 
 ### `eng-senior` — Senior Engineer
 
-Owns architecture decisions, PR review, ADR authoring, and technical design. Reads the codebase before writing anything.
+Owns architecture decisions, PR review, and technical design. Reads the codebase before writing anything.
 
 **Does:**
-- Architecture decisions with 2–3 options and explicit tradeoffs
-- PR/MR review against established standards (errors → warnings → suggestions)
-- Technical design — what files change, what the data flow looks like, what risks exist
-- ADR authoring — stored in `docs/adr/` within the relevant project
-- Handoff to `eng-mid` with a structured spec
+- Architecture decisions with explicit tradeoffs
+- PR/MR review against established standards
+- Technical design — what files change, what the data flow looks like
+- ADR authoring
+- Spec handoff to `eng-mid`
 
 **Does not:** Write boilerplate. Implement from a clear spec. Make product decisions.
 
-**Skills used:** `nick-conventions`, `springfield-context`
+**Model:** `claude-opus-4-7`  
+**Tools:** `Read, Write, Edit, Bash, Grep, Glob`
 
 ---
 
 ### `eng-mid` — Mid-Level Engineer
 
-Implements features from a clear spec. Reads the codebase, follows existing patterns, produces working code.
+Implements features from a clear spec. Follows existing patterns, produces working code.
 
 **Does:**
-- Feature implementation from `eng-senior`'s handoff spec
-- Springfield web components (Component/View split, `React.memo`, path aliases)
-- Springfield API handlers (try-catch, `Response`, HTML error format)
-- Springfield CLI commands (`@springfield-utils/spawnAsync`, `@springfield-constants` paths)
-- OSS package work (named exports, `import type`, `cac`, `picocolors`)
+- Feature implementation from spec
+- Component and API handler implementation
+- Pattern-following — reads existing code first, matches conventions
+- Test writing for implemented features
 
-**Does not:** Make architectural decisions. Modify Springfield from this system. Merge or push.
+**Does not:** Make architectural decisions. Merge or push.
 
-**Skills used:** `nick-conventions`, `springfield-context`
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Write, Edit, Bash, Grep, Glob`
 
 ---
 
 ### `eng-junior` — Junior Engineer
 
-Handles boilerplate, test writing, scaffolding, and repetitive implementation tasks. Does exactly what was asked — nothing more.
+Handles boilerplate, test writing, scaffolding, and repetitive tasks. Does exactly what was asked — nothing more.
 
 **Does:**
-- Package scaffolding (Springfield pattern, bundt-style OSS pattern)
-- Test writing (Bun/Jest and Vitest patterns)
+- Package scaffolding
+- Test writing
 - Barrel export updates
 - Type definition files
 - Repetitive implementation from a reference pattern
 
 **Does not:** Make decisions. Refactor out-of-scope code. Add dependencies.
 
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Write, Edit, Bash, Grep, Glob`
+
 ---
 
-## Voice Lane
+## Voice lane
 
 ### `voice` — Human-Readable Transform
 
@@ -115,9 +144,12 @@ Rewrites AI-generated content in Nick's natural written register. Not a polish p
 
 **Contexts:** `email` · `webex` · `pr-description` · `jira-ticket` · `stakeholder-update` · `technical-doc` · `blog-post`
 
-**Strips on sight:** "I hope this helps", "It's worth noting", "In conclusion", passive voice where active works, bullet points for prose content, hedging qualifiers.
+**Strips on sight:** hedging qualifiers, passive voice where active works, filler phrases like "It's worth noting", bullet points for prose content.
 
-**Reads:** `skills/nick-voice/` before every session.
+**Loads:** `skills/nick-voice/` before every session.
+
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Write, Bash, Grep, Glob`
 
 ---
 
@@ -125,13 +157,13 @@ Rewrites AI-generated content in Nick's natural written register. Not a polish p
 
 ### `momentum-sentinel` — Project Health Monitor
 
-Reads the persistent context layer, scores each project on four dimensions, and surfaces what needs attention.
+Reads the persistent context layer, scores each project on four dimensions, and produces a ranked report. Called by the sentinel service via `claude -p`.
 
 **Scoring (0–100):**
 
 | Dimension | Max | Signal |
 |-----------|-----|--------|
-| Activity | 25 | Commit recency (last 3 / 7 / 14 / 14+ days) |
+| Activity | 25 | Git commit recency |
 | Queue Health | 25 | Inbox size and blocked items |
 | Priority Alignment | 25 | Stated priority vs. actual activity |
 | Context Freshness | 25 | Age of `last_touched` in project TOML |
@@ -140,6 +172,7 @@ Reads the persistent context layer, scores each project on four dimensions, and 
 
 **After each run:** Updates `sentinel.last_run` in `context/global.toml` and `health` in each project TOML.
 
-**Does not:** Create tickets. Modify source code. Change priority or manual_override fields.
+**Does not:** Create tickets. Modify source code. Change `priority` or `manual_override` fields.
 
-**Mode:** On-demand. Cron mode planned for Phase 4.
+**Model:** `claude-sonnet-4-6`  
+**Tools:** `Read, Bash, Grep, Glob`
