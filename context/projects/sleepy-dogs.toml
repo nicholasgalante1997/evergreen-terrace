@@ -1,0 +1,21 @@
+[project]
+name = "sleepy-dogs"
+repo = "/home/nicks-dgx/dev/experiments/sleepy-dogs"
+gitlab_url = ""
+description = "Published npm package (sleepydogs). Zero-dependency JavaScript utility library under 4kb minified+gzipped. Opinionated abstractions over common patterns. pnpm, Jest, TypeScript."
+
+[status]
+priority = "p3"
+phase = "maintenance"
+last_touched = "2026-04-01"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Lives in experiments/sleepy-dogs, not a standalone repo checkout. pnpm workspace, Jest for tests, TypeScript. Published to npm as sleepydogs. Has docs/, src/, __tests/. No recent commits visible — likely stable but aging. Uses pnpm not bun (predates bundt conventions)."
+next_action = "Assess if still actively maintained or can be archived"

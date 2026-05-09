@@ -1,0 +1,21 @@
+[project]
+name = "deckvault"
+repo = "/home/nicks-dgx/dev/.Project-Johto/Pokemon"
+gitlab_url = ""
+description = "Competitive Pokemon TCG platform. 'From Meta → My Deck' workflow with deck analytics and local meta tracking. Production: NVIDIA DGX Spark self-hosted → Cloudflare Tunnel → deckvault.gg. Full-stack Turbo monorepo (Bun + Rust)."
+
+[status]
+priority = "p0"
+phase = "active-feature"
+last_touched = "2026-05-08"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Production app running on this machine. Architecture: React 19 SSR web (:3000), REST API Bun (:3001) → PG, GraphQL Apollo/Bun (:3002) → SQLite, tcg-api Rust/axum (:8080) → PG+Neo4j, cron scheduler (Bun), MCP server (Rust/axum), data sync scripts (Bun), distributed-ledger prototype (Rust). Docker → nginx → cloudflared. Images on GHCR (ghcr.io/mega-blastoise/deckvault-*). mise.toml: bun 1.3.5, node 24.6.0, rust 1.92.0. Has .claude/specs/ for simulation platform, search-by-use, rs-mcp-server, UI migration. MCP server registered in .mcp.json. Differentiates vs Limitless TCG / RK9.gg on personalization layer."
+next_action = "Check .claude/wipp/NEXT_SESSION_PROMPT.md for current in-progress work"

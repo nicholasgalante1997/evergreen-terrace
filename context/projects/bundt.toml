@@ -1,0 +1,21 @@
+[project]
+name = "bundt"
+repo = "/home/nicks-dgx/dev/bundt"
+gitlab_url = ""
+description = "Bun Developer Toolkits — monorepo of independently versioned OSS tools under @bundt/*. Currently active: @bundt/prev (agent-native React SSR, v0.3.0), @bundt/cleo (Claude extensions orchestrator, pre-release)."
+
+[status]
+priority = "p1"
+phase = "active-feature"
+last_touched = "2026-05-07"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "@bundt/prev is the most active package — v0.3.0 released, API stabilizing toward v1.0. Core engine (Fragment/Frame/Session/Binding/DataSource) and streaming SSR are implemented. @bundt/cleo is pre-release: headless task runner, TUI, BCP integration, agent lifecycle done; registry not yet live. Other packages (hateoas, waavy, signals, dxdocs) in maintenance. Uses Turbo, Bun build pipeline, Changesets for versioning."
+next_action = "Identify next @bundt/prev milestone toward v1.0 API stability"

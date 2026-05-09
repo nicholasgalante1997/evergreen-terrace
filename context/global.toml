@@ -1,24 +1,99 @@
 [sentinel]
-last_run = ""
+last_run = "2026-05-08T00:00:00"
 mode = "on-demand"
 cron_schedule = "0 8 * * 1-5"
 
 [[priority_order]]
-project = "springfield"
+project = "deckvault"
 rank = 1
 manual_override = false
 
 [[priority_order]]
-project = "fidget-tokens"
+project = "arcturus-jr"
 rank = 2
 manual_override = false
 
 [[priority_order]]
-project = "adaptive-spirit"
+project = "agartha"
 rank = 3
 manual_override = false
 
 [[priority_order]]
-project = "spectrum-ga-map"
+project = "bundt"
 rank = 4
+manual_override = false
+
+[[priority_order]]
+project = "foresight"
+rank = 5
+manual_override = false
+
+[[priority_order]]
+project = "evergreen-terrace"
+rank = 6
+manual_override = false
+
+[[priority_order]]
+project = "monologues"
+rank = 7
+manual_override = false
+
+[[priority_order]]
+project = "nix-rails"
+rank = 8
+manual_override = false
+
+[[priority_order]]
+project = "bit-context-protocol"
+rank = 9
+manual_override = false
+
+[[priority_order]]
+project = "btop"
+rank = 10
+manual_override = false
+
+[[priority_order]]
+project = "nemotron"
+rank = 11
+manual_override = false
+
+[[priority_order]]
+project = "linux-system-monitor"
+rank = 12
+manual_override = false
+
+[[priority_order]]
+project = "gpui-ergonomics"
+rank = 13
+manual_override = false
+
+[[priority_order]]
+project = "pgz"
+rank = 14
+manual_override = false
+
+[[priority_order]]
+project = "sleepy-dogs"
+rank = 15
+manual_override = false
+
+[[priority_order]]
+project = "experiments"
+rank = 16
+manual_override = false
+
+[[priority_order]]
+project = "anti-react"
+rank = 17
+manual_override = false
+
+[[priority_order]]
+project = "nodext4"
+rank = 18
+manual_override = false
+
+[[priority_order]]
+project = "zed"
+rank = 19
 manual_override = false

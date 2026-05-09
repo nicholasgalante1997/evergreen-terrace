@@ -1,0 +1,21 @@
+[project]
+name = "foresight"
+repo = "/home/nicks-dgx/dev/foresight"
+gitlab_url = ""
+description = "Rust/Tauri proactive resource management tool for non-technical enterprise workers. Lightweight agent monitors system resources and surfaces plain-language nudges before problems occur. Phase 2 in progress."
+
+[status]
+priority = "p1"
+phase = "active-feature"
+last_touched = "2026-05-07"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Phase 1 complete: foresight-agent binary polls sysinfo every 30s, stores snapshots to SQLite via foresight-db, runs idempotent migrations on startup. Cargo workspace with four crates: foresight-core (models, analysis), foresight-db (SQLite, rusqlite), foresight-agent (binary), foresight-widget (Tauri, Phase 3). Phase 2 adds analysis engine in foresight-core and nudge delivery in foresight-agent. Uses thiserror/anyhow, tracing, tokio, chrono, serde."
+next_action = "Implement Phase 2 analysis engine in foresight-core/src/analysis/"

@@ -1,0 +1,21 @@
+[project]
+name = "experiments"
+repo = "/home/nicks-dgx/dev/experiments"
+gitlab_url = ""
+description = "Collection of prototype and reference apps for bundt packages. Not independently versioned. Contains: cleo, create-waavy-app, dxdocs, hateoas-framework, loclaude, sleepy-dogs, waavy prototypes."
+
+[status]
+priority = "p3"
+phase = "maintenance"
+last_touched = "2026-04-15"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Loosely organized workspace. Each subdirectory is an experiment app using a bundt package. Used to develop and validate bundt APIs before stabilizing them. sleepy-dogs is a full published package here (see its own TOML). cleo/ and waavy/ are integration tests for those packages. No shared package.json or turbo.json — each is standalone."
+next_action = "Keep as-is; update experiments when bundt APIs change"

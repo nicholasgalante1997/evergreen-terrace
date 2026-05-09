@@ -1,0 +1,21 @@
+[project]
+name = "arcturus-jr"
+repo = "/home/nicks-dgx/dev/.Project-Arcturus/Arcturus-JR"
+gitlab_url = ""
+description = "Personal technical blog. React 19 SSR, Bun, Turbo monorepo. Self-hosted. 'Void' design system: jet-black (#000000) surfaces, five vivid brand accents (azure, rose, violet, amber, orange), rose hover invariant. Active published content."
+
+[status]
+priority = "p1"
+phase = "active-feature"
+last_touched = "2026-05-08"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "React 19 SSR blog with Turbo monorepo. Has loclaude Docker setup (lc.docker-compose.yml) for local LLM integration. 'Void' design system (DESIGN.md): all interactive elements pivot to rose #ff006e on hover regardless of variant. Fira Sans at 15px base. No light mode. Published articles: caesar ciphers, webpack externals + ES6 import maps, react compiler. Uses loclaude for local model inference. Active content site."
+next_action = "Review unpublished drafts and publish cadence"

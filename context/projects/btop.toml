@@ -1,0 +1,21 @@
+[project]
+name = "btop"
+repo = "/home/nicks-dgx/dev/btop"
+gitlab_url = ""
+description = "Fast Bun/TypeScript TUI system monitor for Linux. CPU, memory, GPU (nvidia-smi), processes with vim navigation and live search. Published to npm."
+
+[status]
+priority = "p2"
+phase = "maintenance"
+last_touched = "2026-05-07"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Single initial commit with full TUI implementation. Bun runtime, reads /proc directly for Linux telemetry. Vim-style navigation (j/k/g/G), sortable process list (/c/m/p/t keys), per-panel layout. GPU stats via nvidia-smi subprocess. Release pipeline via bun scripts/release.ts. Source: src/components, src/hooks, src/lib, src/index.tsx."
+next_action = "Review any open issues or feature requests"

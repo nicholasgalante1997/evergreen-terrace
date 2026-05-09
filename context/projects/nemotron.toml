@@ -1,0 +1,21 @@
+[project]
+name = "nemotron"
+repo = "/home/nicks-dgx/dev/nemotron"
+gitlab_url = ""
+description = "Local LLM tooling. MCP server (Bun/TypeScript) wrapping a local Nemotron-3-Nano-30B llama-server instance running on this machine's GPU. Enables Claude Code to use the local model via MCP."
+
+[status]
+priority = "p2"
+phase = "maintenance"
+last_touched = "2026-05-01"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Three subdirectories: llama.cpp (compiled llama.cpp binary or source), mcp (Bun/TypeScript MCP server, port 3741, wraps local llama-server), models/ (GGUF model files — nemotron3-gguf subdir). MCP server supports both stdio and HTTP modes (--http flag). Strict TypeScript, verbatimModuleSyntax. Requires local llama-server to be running."
+next_action = "Verify MCP server is registered in Claude Code settings"

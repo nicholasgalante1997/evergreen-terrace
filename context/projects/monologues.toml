@@ -1,0 +1,21 @@
+[project]
+name = "monologues"
+repo = "/home/nicks-dgx/dev/.Monologues"
+gitlab_url = ""
+description = "Web application with auth and casts database. Turbo monorepo, Docker. Purpose appears to be a podcast/media platform ('monologues' + 'casts'). Most recently touched project (May 7, 2026)."
+
+[status]
+priority = "p2"
+phase = "active-feature"
+last_touched = "2026-05-07"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Turbo monorepo. Has auth.db and casts.db — SQLite persistence. apps/ directory (unexplored). Docker + docker-compose. Has smoke-test.sh for automated service validation. Very recently active. Full stack unknown — needs deeper exploration to document properly."
+next_action = "Explore apps/ structure to understand full architecture and document here"

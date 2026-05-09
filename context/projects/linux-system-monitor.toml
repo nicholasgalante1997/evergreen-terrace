@@ -1,0 +1,21 @@
+[project]
+name = "linux-system-monitor"
+repo = "/home/nicks-dgx/dev/linux-system-monitor"
+gitlab_url = ""
+description = "Rust/Actix-web system monitoring service with web UI. Reads /proc via sysinfo, serves data over HTTP. Dockerized. The foundational project that contributed the sysinfo integration pattern and data model shape to foresight."
+
+[status]
+priority = "p2"
+phase = "maintenance"
+last_touched = "2026-04-15"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Rust workspace. actix-web 4, sysinfo 0.34, tokio, serde, anyhow. Has Docker + docker-compose, ngrok integration. Source layout: src/app, src/env, src/log, src/models, src/rdf, src/services, src/ui, src/utils. Three PRs merged. Contributed CPU double-refresh accuracy pattern and ProcessRow model shape to foresight and btop respectively."
+next_action = "Review if any open issues; assess whether to unify with foresight codebase"

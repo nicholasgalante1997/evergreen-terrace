@@ -1,0 +1,21 @@
+[project]
+name = "nodext4"
+repo = "/home/nicks-dgx/dev/.Project-Bun-Ext4-Filesystem/nodext4"
+gitlab_url = ""
+description = "JavaScript implementation of the Linux ext4 filesystem spec. Low-level systems exploration in JS/Bun."
+
+[status]
+priority = "p3"
+phase = "stale"
+last_touched = "2025-10-19"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Pure JavaScript implementation of ext4 filesystem per Linux kernel docs. Research/learning project. Stale since Oct 2025. Possibly informing the Agartha OS filesystem design."
+next_action = "Archive or revive as reference material for Agartha filesystem work"

@@ -1,0 +1,21 @@
+[project]
+name = "bit-context-protocol"
+repo = "/home/nicks-dgx/dev/.RFCs/bit-context-protocol"
+gitlab_url = ""
+description = "Reference implementation of the Bit Context Protocol (BCP) binary format. Compact, typed serialization for LLM context — 30-50% more token-efficient than markdown/JSON. RFC Draft v0.1.0, Feb 2026. Used by @bundt/cleo --bcp flag."
+
+[status]
+priority = "p2"
+phase = "maintenance"
+last_touched = "2026-02-12"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Binary format spec and reference implementation. Packs semantic LLM context into a binary representation that decodes into token-efficient text. Avoids wasted tokens from markdown fences, JSON envelopes, repeated path prefixes. Has fuzzing docs (.docs/Fuzzing.md). Integrated into @bundt/cleo as first-class feature (cleo run --bcp ./ctx.bcp). RFC.txt contains full spec."
+next_action = "Check if BCP implementation is complete and aligned with RFC v0.1.0"

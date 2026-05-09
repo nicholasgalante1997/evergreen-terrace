@@ -1,0 +1,21 @@
+[project]
+name = "agartha"
+repo = "/home/nicks-dgx/dev/.Agartha"
+gitlab_url = ""
+description = "Bare-metal Rust OS. 'An operating system that is itself a cryptographic easter egg.' x86-64, UEFI, Limine bootloader. Modular monolithic kernel. No-std Rust (nightly pinned). Research phase complete, early implementation started."
+
+[status]
+priority = "p1"
+phase = "greenfield"
+last_touched = "2026-04-13"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "OpenBSD security-first philosophy + Linux pragmatic extensibility. Entire system is a layered puzzle box — reverse engineers find breadcrumbs leading to a hidden revelation. Named for the mythical city at Earth's center. Key decisions made: modular monolithic, Rust+minimal asm (no C), x86-64 UEFI Limine, study-and-reimplement strategy (blog_os → xv6 → Linux/OpenBSD). Has agartha.iso already. Two-model workflow: Claude (architecture/specs/puzzle) + Nemotron-3-Nano-30B local GPU (Rust kernel boilerplate/driver scaffolding/syscall stubs). CRITICAL: never start llama-server --ctx-size above 262144 (GB10 GPU fault risk). Specs in .claude/spec/ (SPEC_00 through SPEC_09). Crates: kernel (#![no_std]), xtask. Key deps: limine, x86_64, spin, bitflags, linked_list_allocator."
+next_action = "Run /nemotron at session start for full workflow guide; check SPEC_00 research agenda for current milestone"

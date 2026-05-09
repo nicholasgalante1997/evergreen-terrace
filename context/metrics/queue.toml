@@ -1,0 +1,8 @@
+
+[[events]]
+ts = "2026-05-09T02:07:04.918Z"
+type = "item_delegated"
+item_id = "a4f1c8d2-3b7e-4a09-9e5f-bc2301847601"
+project = "deckvault"
+priority = "p0"
+agent = "eng-mid"

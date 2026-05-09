@@ -1,0 +1,21 @@
+[project]
+name = "evergreen-terrace"
+repo = "/home/nicks-dgx/dev/evergreen-terrace"
+gitlab_url = ""
+description = "Personal engineering org platform. Agent team, work queue, momentum sentinel, and GasTown-style parallel conductor for one-person OSS operation at principal scope."
+
+[status]
+priority = "p1"
+phase = "active-feature"
+last_touched = "2026-05-08"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Phase 4 in progress. Phases 1-3 complete (queue-server, tui, web dashboard, 8 agents, skills, steering, context layer, integrations). Phase 4 targets: metrics service, dashboard metrics views, Tauri desktop, Conductor orchestrator. All services have source. Build pipeline works (desktop excluded from default build). Agents synced to ~/.claude/agents/ via scripts/sync-agents.ts + PostToolUse hook."
+next_action = "Verify conductor end-to-end with a test goal submission"

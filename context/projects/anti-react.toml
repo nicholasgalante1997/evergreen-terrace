@@ -1,0 +1,21 @@
+[project]
+name = "anti-react"
+repo = "/home/nicks-dgx/dev/.Project-Anti-React"
+gitlab_url = ""
+description = "Vanilla/alternative UI framework — a 'no React' approach to frontend development. Bun + Rust hybrid. Exploratory."
+
+[status]
+priority = "p3"
+phase = "stale"
+last_touched = "2025-11-27"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Bun + Rust + bin/ + templates/ structure. Experimental alternative to React. Has .claude/ directory suggesting Claude Code was used. Stale since Nov 2025. Related philosophically to Arcturus-JR's original anti-React stance."
+next_action = "Determine if worth continuing or archiving"

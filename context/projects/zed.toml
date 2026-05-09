@@ -1,0 +1,21 @@
+[project]
+name = "zed"
+repo = "/home/nicks-dgx/dev/zed"
+gitlab_url = ""
+description = "Clone of the Zed editor source (zed-industries/zed). High-performance multiplayer code editor built in Rust with GPUI. Present on this machine for reading source, understanding GPUI internals, and potential contribution."
+
+[status]
+priority = "p3"
+phase = "maintenance"
+last_touched = "2026-05-07"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Full upstream Zed source clone. Primary use: understanding GPUI internals for gpui-ergonomics research. Most recent upstream commit visible (1581a08). Not a fork — read-only reference. Rust, GPUI. Cargo workspace with many crates. Do not commit changes here without intending to open a PR upstream."
+next_action = "Keep synced with upstream as needed for GPUI research"

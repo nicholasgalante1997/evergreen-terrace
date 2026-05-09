@@ -1,0 +1,21 @@
+[project]
+name = "nix-rails"
+repo = "/home/nicks-dgx/dev/.Project-NixRails/nix-rails"
+gitlab_url = ""
+description = "Scaffolding engine for generating production-ready Bun Turborepo workspaces. Phase 1 MVP complete. Phase 2 (database support + Docker) planned."
+
+[status]
+priority = "p2"
+phase = "active-feature"
+last_touched = "2026-01-06"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Phase 1 MVP complete as of 2026-01-06. Phase 2 targets database support and Docker integration. CLI-based scaffolding tool. Generates Bun/Turbo workspace structure. Implementation status tracked in .claude/implementation-status.md."
+next_action = "Review .claude/implementation-status.md and scope Phase 2 work"

@@ -1,0 +1,21 @@
+[project]
+name = "gpui-ergonomics"
+repo = "/home/nicks-dgx/dev/gpui-ergonomics"
+gitlab_url = ""
+description = "Rust research workspace exploring ergonomic abstractions over GPUI, Zed's native UI framework. Two crates: gpui-query (data binding/query layer) and gpui-rsx (RSX macro ergonomics). Exploratory — no releases."
+
+[status]
+priority = "p3"
+phase = "greenfield"
+last_touched = "2026-04-01"
+health = "at-risk"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = "Cargo workspace, no git. Depends on gpui = 0.2.2, anyhow. Crates: gpui-query and gpui-rsx. Research project exploring GPUI as a native UI target for future tools. Has a posts/ directory with design notes. No tests, no CI. Likely inspired by zed clone in ~/dev/zed."
+next_action = "Determine if this will become a real project or remain a research spike"
