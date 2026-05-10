@@ -1,4 +1,92 @@
 # @see <https://mise.jdx.dev/>
 
 [tools]
-bun = { os = "macos", version = "system" }
+bun = "1.3.13"
+
+[env]
+QUEUE_ROOT = "{{config_root}}"
+
+# ── Lifecycle tasks ──────────────────────────────────────────────────────────
+
+[tasks.build]
+description = "Build all services (turbo)"
+run = "bun run build"
+
+[tasks.typecheck]
+description = "Type-check all packages (turbo)"
+run = "bun run typecheck"
+
+# ── Start tasks ──────────────────────────────────────────────────────────────
+
+[tasks.start]
+description = "Build and start all services, open dashboard in browser"
+run = "bun scripts/start.ts"
+
+[tasks."start:dev"]
+description = "Start all services (skip rebuild) and open browser"
+run = "bun scripts/start.ts --no-build"
+
+[tasks."start:headless"]
+description = "Build and start all services without opening browser"
+run = "bun scripts/start.ts --no-browser"
+
+# ── Individual service tasks ─────────────────────────────────────────────────
+
+[tasks.queue]
+description = "Start queue-server (port 2727)"
+run = "bun run core/queue-server/dist/index.js"
+
+[tasks.sentinel]
+description = "Start sentinel server (port 2730)"
+run = "bun run core/sentinel/dist/index.js"
+
+[tasks.metrics]
+description = "Start metrics service (port 2729)"
+run = "bun run core/metrics/dist/index.js"
+
+[tasks.conductor]
+description = "Start conductor (port 2731)"
+run = "bun run core/conductor/dist/index.js"
+
+[tasks.dashboard]
+description = "Start web dashboard dev server (port 2728)"
+run = "bun run --cwd core/web dev"
+
+[tasks.tui]
+description = "Start TUI dashboard (terminal)"
+run = "bun run core/tui/dist/index.js"
+
+# ── Utility tasks ────────────────────────────────────────────────────────────
+
+[tasks."sync-agents"]
+description = "Sync agent definitions from repo to ~/.claude/agents/"
+run = "bun scripts/sync-agents.ts"
+
+[tasks.sentinel-run]
+description = "Trigger an on-demand sentinel run (requires sentinel server running)"
+run = """
+curl -s -X POST http://localhost:2730/sentinel/run | bun -e \
+  'const r = await Bun.stdin.json(); console.log(r.ok ? "Sentinel run complete" : "Error: " + r.error)'
+"""
+
+[tasks.clean]
+description = "Remove all dist/ directories"
+run = "bun run clean"
+
+[tasks."queue:ls"]
+description = "List all queue items (inbox + active)"
+run = "curl -s http://localhost:2727/queue | bun -e 'const q = await Bun.stdin.json(); console.log(\"INBOX:\", q.inbox.length, \"  ACTIVE:\", q.active.length, \"  COMPLETED:\", q.completed?.length ?? 0)'"
+
+[tasks.health]
+description = "Check health of all services"
+run = """
+for port in 2727 2729 2730 2731; do
+  name=$(case $port in 2727) echo "queue-server";; 2729) echo "metrics";; 2730) echo "sentinel";; 2731) echo "conductor";; esac)
+  status=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 1 http://localhost:$port/health 2>/dev/null)
+  if [ "$status" = "200" ]; then
+    echo "  ✓ $name (:$port)"
+  else
+    echo "  ✗ $name (:$port) — not running or unhealthy"
+  fi
+done
+"""

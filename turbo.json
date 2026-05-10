@@ -6,6 +6,11 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "out/**"]
     },
+    "@evergreen-terrace/desktop#build": {
+      "dependsOn": ["@evergreen-terrace/web#build"],
+      "outputs": ["src-tauri/target/release/bundle/**"],
+      "cache": false
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": [],
