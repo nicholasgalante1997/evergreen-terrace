@@ -1,6 +1,7 @@
 export default {
   title: "evergreen-terrace",
-  description: "Personal engineering org — agent team, work queue, momentum sentinel, and parallel conductor for a one-person shop at principal scope.",
+  description:
+    "Personal engineering org — agent team, work queue, momentum sentinel, and parallel conductor for a one-person shop at principal scope.",
 
   navigation: [
     { type: "page", path: "/", title: "Introduction" },
@@ -14,26 +15,26 @@ export default {
         { type: "page", path: "/sentinel", title: "Sentinel" },
         { type: "page", path: "/conductor", title: "Conductor" },
         { type: "page", path: "/metrics", title: "Metrics" },
-        { type: "page", path: "/desktop", title: "Desktop App" },
-      ],
+        { type: "page", path: "/desktop", title: "Desktop App" }
+      ]
     },
     {
       type: "group",
       title: "Agent Team",
       items: [
         { type: "page", path: "/agents", title: "Agents" },
-        { type: "page", path: "/skills", title: "Skills" },
-      ],
+        { type: "page", path: "/skills", title: "Skills" }
+      ]
     },
     { type: "page", path: "/integrations", title: "Integrations" },
-    { type: "page", path: "/phases", title: "Roadmap" },
+    { type: "page", path: "/phases", title: "Roadmap" }
   ],
 
   theme: {
-    darkMode: "media",
+    darkMode: "media"
   },
 
   output: {
-    outDir: "./dist",
-  },
-};
+    outDir: "./dist"
+  }
+}

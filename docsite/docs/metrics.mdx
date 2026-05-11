@@ -28,21 +28,21 @@ The files are append-only — never overwritten. Safe to read while the service 
 
 ## API Reference
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/metrics/queue` | All queue events |
-| `GET` | `/metrics/queue/velocity` | Items created/delegated/completed per day (last 30 days) |
-| `GET` | `/metrics/sentinel` | All sentinel runs |
-| `GET` | `/metrics/sentinel/history` | Score history per project (last 10 runs) |
+| Method | Path                        | Description                                              |
+| ------ | --------------------------- | -------------------------------------------------------- |
+| `GET`  | `/metrics/queue`            | All queue events                                         |
+| `GET`  | `/metrics/queue/velocity`   | Items created/delegated/completed per day (last 30 days) |
+| `GET`  | `/metrics/sentinel`         | All sentinel runs                                        |
+| `GET`  | `/metrics/sentinel/history` | Score history per project (last 10 runs)                 |
 
 ### Velocity response
 
 ```ts
 interface VelocityPoint {
-  date: string;       // YYYY-MM-DD
-  created: number;
-  delegated: number;
-  completed: number;
+  date: string // YYYY-MM-DD
+  created: number
+  delegated: number
+  completed: number
 }
 ```
 
@@ -50,8 +50,8 @@ interface VelocityPoint {
 
 ```ts
 interface SentinelHistory {
-  project: string;
-  runs: Array<{ ts: string; score: number }>;
+  project: string
+  runs: Array<{ ts: string; score: number }>
 }
 ```
 

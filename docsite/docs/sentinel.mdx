@@ -58,12 +58,12 @@ Same-day runs overwrite the previous report for that date. The web dashboard Sen
 
 Each project is scored 0–100 across four dimensions (0–25 each):
 
-| Dimension | Signal | Scoring |
-|-----------|--------|---------|
-| **Activity** | Git commit recency | Last 3 days: 25 · Last 7 days: 20 · Last 14 days: 10 · 14+ days: 0 |
-| **Queue Health** | Inbox size and blocked items | ≤2 items, not blocked: 25 · 3–5 items: 15 · >5 or blocked: 5 · >10: 0 |
-| **Priority Alignment** | Stated priority vs. actual activity | p0/p1 with recent activity: 25 · p2/p3 low activity: 25 · p0/p1 no activity: 0 (MISALIGNMENT) · p2/p3 high activity: 15 |
-| **Context Freshness** | Age of `last_touched` in project TOML | Within 7 days: 25 · Within 14 days: 15 · Within 30 days: 5 · 30+ days: 0 |
+| Dimension              | Signal                                | Scoring                                                                                                                 |
+| ---------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Activity**           | Git commit recency                    | Last 3 days: 25 · Last 7 days: 20 · Last 14 days: 10 · 14+ days: 0                                                      |
+| **Queue Health**       | Inbox size and blocked items          | ≤2 items, not blocked: 25 · 3–5 items: 15 · >5 or blocked: 5 · >10: 0                                                   |
+| **Priority Alignment** | Stated priority vs. actual activity   | p0/p1 with recent activity: 25 · p2/p3 low activity: 25 · p0/p1 no activity: 0 (MISALIGNMENT) · p2/p3 high activity: 15 |
+| **Context Freshness**  | Age of `last_touched` in project TOML | Within 7 days: 25 · Within 14 days: 15 · Within 30 days: 5 · 30+ days: 0                                                |
 
 **Score interpretation:** 75–100 healthy · 50–74 at-risk · 0–49 stale
 
@@ -82,9 +82,9 @@ The sentinel does **not** modify `priority` or `manual_override` fields — thos
 
 ## API reference
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | `{ ok: true, mode: "on-demand" }` |
-| `GET` | `/sentinel/latest` | Latest report as `text/markdown`; 404 if no report exists yet |
-| `GET` | `/sentinel/status` | `{ last_run, mode, next_run, run_in_progress }` |
-| `POST` | `/sentinel/run` | Trigger an immediate run; returns `{ ok: true, length: N }` on success; 409 if already running |
+| Method | Path               | Description                                                                                    |
+| ------ | ------------------ | ---------------------------------------------------------------------------------------------- |
+| `GET`  | `/health`          | `{ ok: true, mode: "on-demand" }`                                                              |
+| `GET`  | `/sentinel/latest` | Latest report as `text/markdown`; 404 if no report exists yet                                  |
+| `GET`  | `/sentinel/status` | `{ last_run, mode, next_run, run_in_progress }`                                                |
+| `POST` | `/sentinel/run`    | Trigger an immediate run; returns `{ ok: true, length: N }` on success; 409 if already running |

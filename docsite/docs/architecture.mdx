@@ -45,7 +45,7 @@ evergreen-terrace/
 
 **Persistent state over ephemeral state.** Everything that needs to survive a restart lives in TOML files on disk. Queue items, bead state, sentinel reports, project context — all disk-backed. Process restarts pick up where they left off.
 
-**Human gates at phase transitions.** Agents produce drafts and proposals. You approve before work moves forward. The three gates: *what to build*, *how to build it*, *is it good enough to ship*.
+**Human gates at phase transitions.** Agents produce drafts and proposals. You approve before work moves forward. The three gates: _what to build_, _how to build it_, _is it good enough to ship_.
 
 **Working directory is load-bearing.** The conductor runs `claude -p` with `cwd` set to the project's repo path, resolved from the project's context TOML. Without this, agents run in the evergreen-terrace directory regardless of which project they're modifying. Every project TOML must have a `repo` field.
 

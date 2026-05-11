@@ -43,6 +43,7 @@ Produces a `.app` bundle in `src-tauri/target/release/bundle/macos/`. The Vite o
 ## Native Notifications
 
 Fires when:
+
 - A new `p0` item enters the inbox
 - A sentinel run completes with a stale project (score < 50)
 
@@ -52,10 +53,10 @@ The app can read local queue state without the queue server running via Tauri co
 
 ```ts
 // Available in the WebView via @tauri-apps/api
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core"
 
-const inbox = await invoke("read_queue_inbox", { queueRoot: "/path/to/repo" });
-const global = await invoke("read_context_global", { queueRoot: "/path/to/repo" });
+const inbox = await invoke("read_queue_inbox", { queueRoot: "/path/to/repo" })
+const global = await invoke("read_context_global", { queueRoot: "/path/to/repo" })
 ```
 
 ## Icons

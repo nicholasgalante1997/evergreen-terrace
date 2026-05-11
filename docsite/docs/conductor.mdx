@@ -121,18 +121,18 @@ This gives the agent knowledge of the project's current phase, architecture note
 
 ## API reference
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | `{ ok: true }` |
-| `POST` | `/conductor/dispatch` | Dispatch a queue item `{ item: QueueItem }` |
-| `POST` | `/conductor/goal` | Submit a free-text goal for decomposition `{ description: string }` |
-| `GET` | `/conductor/goals` | List all goals and their bead status |
-| `GET` | `/conductor/goal/:id` | Goal detail with full bead list |
-| `GET` | `/conductor/queue-item/:id` | Find the bead associated with a queue item ID |
-| `GET` | `/conductor/bead/:id/stream` | SSE stream of bead events (`text/event-stream`) |
-| `POST` | `/conductor/bead/:id/approve` | Approve a `review_pending` bead → `completed` |
-| `POST` | `/conductor/bead/:id/reject` | Reject a `review_pending` bead → `failed` |
-| `POST` | `/conductor/bead/:id/retry` | Re-queue a `failed` bead → `pending` |
+| Method | Path                          | Description                                                         |
+| ------ | ----------------------------- | ------------------------------------------------------------------- |
+| `GET`  | `/health`                     | `{ ok: true }`                                                      |
+| `POST` | `/conductor/dispatch`         | Dispatch a queue item `{ item: QueueItem }`                         |
+| `POST` | `/conductor/goal`             | Submit a free-text goal for decomposition `{ description: string }` |
+| `GET`  | `/conductor/goals`            | List all goals and their bead status                                |
+| `GET`  | `/conductor/goal/:id`         | Goal detail with full bead list                                     |
+| `GET`  | `/conductor/queue-item/:id`   | Find the bead associated with a queue item ID                       |
+| `GET`  | `/conductor/bead/:id/stream`  | SSE stream of bead events (`text/event-stream`)                     |
+| `POST` | `/conductor/bead/:id/approve` | Approve a `review_pending` bead → `completed`                       |
+| `POST` | `/conductor/bead/:id/reject`  | Reject a `review_pending` bead → `failed`                           |
+| `POST` | `/conductor/bead/:id/retry`   | Re-queue a `failed` bead → `pending`                                |
 
 ## Environment
 

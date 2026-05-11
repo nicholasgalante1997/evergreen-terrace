@@ -52,23 +52,23 @@ links = [
 
 ### Priority levels
 
-| Priority | Meaning |
-|----------|---------|
-| `p0` | Drop everything — blocking or production-impacting |
-| `p1` | High — active development, should move this week |
-| `p2` | Medium — scheduled work, will get to it |
-| `p3` | Low — backlog, nice to have, or explicitly parked |
+| Priority | Meaning                                            |
+| -------- | -------------------------------------------------- |
+| `p0`     | Drop everything — blocking or production-impacting |
+| `p1`     | High — active development, should move this week   |
+| `p2`     | Medium — scheduled work, will get to it            |
+| `p3`     | Low — backlog, nice to have, or explicitly parked  |
 
 ### Item types
 
-| Type | Used for |
-|------|---------|
-| `feature` | New functionality — triggers review gate in conductor |
-| `bug` | Defect or regression — triggers review gate |
-| `ops` | Infrastructure, tooling, config — triggers review gate |
-| `pm` | Planning, PRDs, backlog work — auto-completes in conductor |
+| Type       | Used for                                                     |
+| ---------- | ------------------------------------------------------------ |
+| `feature`  | New functionality — triggers review gate in conductor        |
+| `bug`      | Defect or regression — triggers review gate                  |
+| `ops`      | Infrastructure, tooling, config — triggers review gate       |
+| `pm`       | Planning, PRDs, backlog work — auto-completes in conductor   |
 | `research` | Investigation, spike, analysis — auto-completes in conductor |
-| `design` | Design specs, Figma work — review gate enabled by default |
+| `design`   | Design specs, Figma work — review gate enabled by default    |
 
 The review gate means: when the conductor finishes executing a `feature`, `bug`, or `ops` ticket, the bead enters `review_pending` status and requires your explicit approval before the item is marked complete. This allows you to review the diff before anything is counted as done.
 
@@ -78,13 +78,13 @@ Runs on `http://localhost:2727`.
 
 ### Read endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/health` | `{ ok: true }` |
-| `GET` | `/queue` | Full state: `{ inbox, active, completed }` |
-| `GET` | `/queue/inbox` | Pending items only |
-| `GET` | `/queue/active` | In-flight items only |
-| `GET` | `/queue/completed` | Completed items |
+| Method | Path               | Description                                |
+| ------ | ------------------ | ------------------------------------------ |
+| `GET`  | `/health`          | `{ ok: true }`                             |
+| `GET`  | `/queue`           | Full state: `{ inbox, active, completed }` |
+| `GET`  | `/queue/inbox`     | Pending items only                         |
+| `GET`  | `/queue/active`    | In-flight items only                       |
+| `GET`  | `/queue/completed` | Completed items                            |
 
 ### Mutation endpoints
 

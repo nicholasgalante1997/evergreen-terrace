@@ -2,104 +2,92 @@
 
 Personal engineering org for a one-person shop operating at principal scope.
 
-The bottleneck isn't access or management — it's team support. evergreen-terrace provides the PM, design, and engineering team that should exist but doesn't. Role-scoped agents handle the work that would otherwise fall to a full team. A persistent work queue tracks everything. A momentum sentinel surfaces what's going stale before it becomes a problem.
+The bottleneck isn't access or management — it's team support. evergreen-terrace provides the PM, design, and engineering team that doesn't otherwise exist. Role-scoped agents handle the work that would otherwise fall to a full team. A persistent work queue tracks everything. A momentum sentinel surfaces what's going stale before it becomes a problem.
 
-## What's Here
+→ **New here? Read the [User Manual](USER_MANUAL.md).**
 
-| Directory | Description |
-|-----------|-------------|
-| `core/queue-server/` | Work queue HTTP server (port 2727) |
-| `core/tui/` | Terminal dashboard |
-| `core/web/` | Vite/React web dashboard with metrics views (port 2728) |
-| `core/metrics/` | Metrics collection service (port 2729) |
-| `core/sentinel/` | Cron runner for momentum sentinel (port 2730) |
-| `core/conductor/` | Parallel agent orchestrator — Mayor/Polecat/Refinery/Witness (port 2731) |
-| `core/desktop/` | Tauri v2 native macOS app wrapping the web dashboard |
-| `packages/config/` | Shared TypeScript configs (`@evergreen-terrace/config`) |
-| `packages/common/` | Shared types and config constants (`@evergreen-terrace/common`) |
-| `internal/build-utils/` | `createBaseConfig` and `concurrent_build` for `Bun.build()` pipelines |
-| `agents/` | Kiro agent definitions (pm, eng-senior, eng-mid, eng-junior, voice, stakeholder, director, momentum-sentinel) |
-| `skills/` | Shared knowledge bases (nick-voice, nick-conventions, springfield-context, fidget-context, agent-os-domain) |
-| `steering/` | Global steering docs read by all agents |
-| `integrations/` | Jira, GitLab, Figma MCP setup guides |
-| `context/` | Persistent project state (TOML) |
-| `queue/` | Work items — inbox (pending) and active (in-flight) |
-| `docsite/` | Documentation site (`@bundt/dxdocs`) |
+---
+
+## What's here
+
+```
+core/             Runtime services (Bun/TypeScript)
+  queue-server/   Work queue HTTP server — port 2727
+  web/            Vite/React dashboard — port 2728
+  metrics/        Metrics collection — port 2729
+  sentinel/       Momentum scoring server — port 2730
+  conductor/      Parallel agent orchestrator — port 2731
+  tui/            Terminal dashboard
+  desktop/        Tauri v2 desktop app (optional)
+packages/         Shared libraries (@evergreen-terrace/common, @evergreen-terrace/config)
+internal/         Build utilities (@evergreen-terrace/build-utils)
+agents/           Agent definitions (AGENT.md + agent.json) for 8 roles
+skills/           Shared knowledge bases loaded into agent system prompts
+steering/         Global docs read by all agents
+context/          Persistent state — project TOMLs, queue metrics, sentinel reports, conductor beads
+queue/            Work items — inbox/ (pending), active/ (in-flight), completed/
+scripts/          Local dev utilities
+docsite/          Technical reference documentation (@bundt/dxdocs)
+```
+
+---
 
 ## Requirements
 
-- Bun `>=1.3.13`
-- Kiro CLI
-- Rust + Cargo (for `core/desktop` only)
+- **Bun** `>= 1.3.13`
+- **Claude Code CLI** — `claude --version` must work
+- **mise** (optional) — provides the task runner
 
-## Install
+---
 
-```sh
+## Setup
+
+```bash
 bun install
-```
-
-## Environment
-
-```sh
 cp .env.example .env
-# Set QUEUE_ROOT to the repo root path
+# Edit .env: set QUEUE_ROOT to the absolute path of this repo
 ```
 
-`QUEUE_ROOT` tells the queue and metrics services where to find `queue/` and `context/`. Defaults to `process.cwd()`.
+`QUEUE_ROOT` is the only required env variable. It defaults to `process.cwd()` if unset, which works when running from the repo root.
+
+---
 
 ## Running
 
-```sh
-# Build all packages first
-bun run build
+**Everything at once:**
 
-# Queue server (port 2727)
-bun run queue
+```bash
+bun run start          # build + start all services + open browser
+bun run start:dev      # start without rebuilding (faster)
+bun run start:headless # start without opening browser
 
-# Terminal dashboard
-bun run tui
-
-# Web dashboard (port 2728) — dev mode
-cd core/web && bun run dev
-
-# Metrics service (port 2729)
-bun run metrics
-
-# Sentinel cron runner (port 2730)
-bun run sentinel
-
-# Conductor orchestrator (port 2731)
-bun run conductor
-
-# Native desktop app (dev)
-cd core/web && bun run dev   # start web first
-cd core/desktop && bun run dev
-
-# Documentation site
-cd docsite && bun run dev
+# With mise:
+mise run start
 ```
 
-## Development
+**Individual services:**
 
-```sh
-bun run build       # Build all packages
-bun run typecheck   # Type-check all packages
-bun run lint        # Lint all packages
-bun run clean       # Clean all build outputs
+```bash
+bun run queue          # port 2727
+bun run sentinel       # port 2730
+bun run metrics        # port 2729
+bun run conductor      # port 2731
+bun run dashboard      # port 2728 (dev mode)
+bun run tui            # terminal dashboard
 ```
 
-## Stack
+**Remote access (laptop → DGX over SSH):**
 
-- **Runtime:** Bun
-- **Monorepo:** Turbo
-- **Language:** TypeScript (strict, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`)
-- **Web dashboard:** Vite + React 19 + recharts
-- **Native desktop:** Tauri v2 (Rust)
-- **Queue/metrics persistence:** TOML files on disk
-- **Agent platform:** Kiro CLI
-- **Registry:** `@cde/hiro` (pinned)
+```bash
+# On your laptop:
+~/bin/evergreen-tunnel      # forwards all service ports locally
+```
 
-## Service Ports
+See `scripts/tunnel.sh` for setup.
+
+---
+
+## Service ports
 
 | Service | Port |
 |---------|------|
@@ -109,6 +97,63 @@ bun run clean       # Clean all build outputs
 | sentinel | 2730 |
 | conductor | 2731 |
 
+---
+
+## Agent team
+
+Eight role-scoped agents, registered globally in `~/.claude/agents/` and available in any Claude Code session:
+
+| Agent | Role |
+|-------|------|
+| `pm` | PRD generation, ticket authoring, backlog grooming |
+| `eng-senior` | Architecture decisions, PR review, ADR authoring |
+| `eng-mid` | Feature implementation from spec |
+| `eng-junior` | Boilerplate, tests, scaffolding |
+| `director` | Scope pressure, prioritization challenge |
+| `stakeholder` | Status updates, business language |
+| `voice` | Output rewrite in Nick's register |
+| `momentum-sentinel` | Cross-project health scoring |
+
+Agents sync automatically to `~/.claude/agents/` via the PostToolUse hook in `.claude/settings.json` when you edit `agents/`, `skills/`, or `steering/`. Manual sync: `bun run sync-agents`.
+
+---
+
+## Queue item schema
+
+```toml
+[item]
+id = ""           # UUID
+title = ""
+project = ""      # must match context/projects/{name}.toml
+type = ""         # feature | bug | research | design | pm | ops
+priority = ""     # p0 | p1 | p2 | p3
+created = ""      # ISO datetime
+source = ""       # manual | sentinel | jira | gitlab
+
+[delegation]
+agent = ""
+delegated_at = ""
+
+[context]
+description = ""
+acceptance = ""
+links = []
+```
+
+---
+
+## Development
+
+```bash
+bun run build       # build all packages
+bun run typecheck   # type-check all packages
+bun run clean       # remove all dist/
+```
+
+---
+
 ## Documentation
 
-Full documentation at `docsite/`. Run `cd docsite && bun run dev` to browse locally.
+- **[User Manual](USER_MANUAL.md)** — how to use the system day to day
+- **[Docsite](docsite/)** — technical reference (`cd docsite && bun run dev`)
+- **[Workflow guides](.claude/workflows/)** — Model A and Model B execution patterns

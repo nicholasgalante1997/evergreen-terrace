@@ -7,6 +7,7 @@ title: Agents
 Eight role-scoped agents, each owning one lane. Narrow scope produces predictable output and reduces review overhead. Agents produce drafts and proposals — you approve before anything ships.
 
 All agents live in `agents/` as a pair of files:
+
 - `AGENT.md` — full instructions for the role
 - `agent.json` — conductor config: model, allowed tools, skills, steering references
 
@@ -34,6 +35,7 @@ bun run sync-agents
 Turns rough ideas, stakeholder asks, or problem statements into structured tickets. Writes TOML files directly to `queue/inbox/`.
 
 **Does:**
+
 - Clarifying questions (two rounds max), then produces a ticket
 - Breaks goals into multiple atomic tickets
 - Backlog review and prioritization against `context/global.toml`
@@ -51,6 +53,7 @@ Turns rough ideas, stakeholder asks, or problem statements into structured ticke
 Translates technical work into business language. Writes status updates, escalation summaries, and executive-facing content.
 
 **Does:**
+
 - Status updates (done / in-progress / blocked / next)
 - Escalation summaries — situation, impact, ask, consequence of inaction
 - Business language translation — outcomes, not implementation details
@@ -69,6 +72,7 @@ Translates technical work into business language. Writes status updates, escalat
 Adversarial by design. Applies scope pressure and stress-tests decisions.
 
 **Does:**
+
 - Scope pressure — finds the minimum version that delivers core value
 - Prioritization challenge — identifies weakest justification vs. highest impact
 - Decision stress-test — surfaces assumptions and opportunity cost
@@ -88,6 +92,7 @@ Adversarial by design. Applies scope pressure and stress-tests decisions.
 Owns architecture decisions, PR review, and technical design. Reads the codebase before writing anything.
 
 **Does:**
+
 - Architecture decisions with explicit tradeoffs
 - PR/MR review against established standards
 - Technical design — what files change, what the data flow looks like
@@ -106,6 +111,7 @@ Owns architecture decisions, PR review, and technical design. Reads the codebase
 Implements features from a clear spec. Follows existing patterns, produces working code.
 
 **Does:**
+
 - Feature implementation from spec
 - Component and API handler implementation
 - Pattern-following — reads existing code first, matches conventions
@@ -123,6 +129,7 @@ Implements features from a clear spec. Follows existing patterns, produces worki
 Handles boilerplate, test writing, scaffolding, and repetitive tasks. Does exactly what was asked — nothing more.
 
 **Does:**
+
 - Package scaffolding
 - Test writing
 - Barrel export updates
@@ -161,12 +168,12 @@ Reads the persistent context layer, scores each project on four dimensions, and 
 
 **Scoring (0–100):**
 
-| Dimension | Max | Signal |
-|-----------|-----|--------|
-| Activity | 25 | Git commit recency |
-| Queue Health | 25 | Inbox size and blocked items |
-| Priority Alignment | 25 | Stated priority vs. actual activity |
-| Context Freshness | 25 | Age of `last_touched` in project TOML |
+| Dimension          | Max | Signal                                |
+| ------------------ | --- | ------------------------------------- |
+| Activity           | 25  | Git commit recency                    |
+| Queue Health       | 25  | Inbox size and blocked items          |
+| Priority Alignment | 25  | Stated priority vs. actual activity   |
+| Context Freshness  | 25  | Age of `last_touched` in project TOML |
 
 **Score interpretation:** 75–100 healthy · 50–74 at-risk · 0–49 stale
 
