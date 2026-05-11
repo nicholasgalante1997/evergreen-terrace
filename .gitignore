@@ -15,6 +15,12 @@ packages/common/lib/
 **/target/
 **/gen/
 
+# Conductor runtime disk state
+context/conductor.db
+context/conductor.db-shm
+context/conductor.db-wal
+context/beads
+
 # Queue active items (runtime state, not source)
 queue/active/*.toml
 

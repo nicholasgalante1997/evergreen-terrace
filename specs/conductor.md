@@ -30,7 +30,8 @@ id = "bead-abc-001"
 goal_id = "goal-xyz"          # Parent goal
 title = "Implement VelocityChart component"
 role = "eng-mid"              # Which agent role handles this
-status = "pending"            # pending | in_progress | completed | failed
+status = "pending"            # prompt_pending | pending | in_progress | review_pending | completed | failed
+item_type = "feature"         # queue item type — controls review gate
 created = "2026-05-08T10:00:00.000Z"
 started = ""
 completed = ""
@@ -43,6 +44,9 @@ output_files = []             # Files the worker is expected to produce/modify
 
 [worker]
 session_id = ""               # Claude session ID when in_progress
+cwd = ""                      # Project repo path — CRITICAL, must be set for feature/bug/ops
+project = ""                  # Project name (matches context/projects/*.toml)
+queue_item_id = ""            # Originating queue item ID
 ```
 
 ## Bead Persistence
@@ -50,13 +54,14 @@ session_id = ""               # Claude session ID when in_progress
 ```
 context/beads/
 ├── {goal_id}/
-│   ├── goal.toml             # Goal description and status
-│   ├── bead-001.toml
-│   ├── bead-002.toml
-│   └── bead-003.toml
+│   ├── goal.toml                    # Goal description and status
+│   ├── bead-{goal_id}-001.toml      # Bead state
+│   ├── prompt-bead-{goal_id}-001.md      # User prompt (editable before dispatch)
+│   ├── sysprompt-bead-{goal_id}-001.md   # System prompt (audit trail)
+│   └── events-bead-{goal_id}-001.jsonl   # Structured event log
 ```
 
-All state is on disk. If the conductor crashes, the next session resets in-progress beads to pending and resumes.
+All state is on disk. If the conductor crashes, the next session resets in-progress beads to pending and resumes. Beads in `prompt_pending` survive restarts — prompt files remain on disk.
 
 ## HTTP API
 
@@ -64,10 +69,17 @@ Port `2731`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/conductor/goal` | Submit a goal `{ description: string }` |
+| `POST` | `/conductor/dispatch` | Dispatch a queue item `{ item: QueueItem }` — creates bead in `prompt_pending` |
+| `POST` | `/conductor/goal` | Submit a raw goal `{ description: string }` (decomposition path) |
 | `GET` | `/conductor/goals` | List all goals and their bead status |
 | `GET` | `/conductor/goal/:id` | Goal detail with all beads |
-| `POST` | `/conductor/bead/:id/retry` | Re-queue a failed bead |
+| `GET` | `/conductor/queue-item/:id` | Find bead by queue item ID |
+| `GET` | `/conductor/bead/:id/prompt` | Read saved prompt + system prompt `{ prompt, systemPrompt }` |
+| `POST` | `/conductor/bead/:id/prompt` | Approve dispatch with optional edit `{ prompt?: string }` |
+| `GET` | `/conductor/bead/:id/ws` | WebSocket stream of bead events (upgrade) |
+| `POST` | `/conductor/bead/:id/approve` | Approve a `review_pending` bead |
+| `POST` | `/conductor/bead/:id/reject` | Reject a `review_pending` bead |
+| `POST` | `/conductor/bead/:id/retry` | Re-queue a `failed` bead |
 
 ## Goal Submission Flow
 
