@@ -1,6 +1,6 @@
 [project]
 name = "nodext4"
-repo = "/home/nicks-dgx/dev/.Project-Bun-Ext4-Filesystem/nodext4"
+repo = "/home/nicks-dgx/dev/nodext4"
 gitlab_url = ""
 description = "JavaScript implementation of the Linux ext4 filesystem spec. Low-level systems exploration in JS/Bun."
 

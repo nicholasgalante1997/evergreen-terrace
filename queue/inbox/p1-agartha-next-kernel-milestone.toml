@@ -44,8 +44,8 @@ acceptance = """
 """
 
 links = [
-  "~/dev/.Agartha/.claude/spec/",
-  "~/dev/.Agartha/",
+  "~/dev/agartha/.claude/spec/",
+  "~/dev/agartha/",
   "context/projects/agartha.toml",
   "context/projects/nemotron.toml"
 ]

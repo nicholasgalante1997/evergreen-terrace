@@ -1,6 +1,6 @@
 [project]
 name = "pgz"
-repo = "/home/nicks-dgx/dev/.Project-South-Park/pgz"
+repo = "/home/nicks-dgx/dev/pgz"
 gitlab_url = ""
 description = "Production-grade Rust CLI for AI-powered coding assistance using local Ollama models. Emulates Claude Code / Amazon Q experience but on local infrastructure. Has Docker Ollama + Open WebUI setup for GPU-accelerated inference."
 

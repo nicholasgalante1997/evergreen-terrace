@@ -1,6 +1,6 @@
 [project]
 name = "bit-context-protocol"
-repo = "/home/nicks-dgx/dev/.RFCs/bit-context-protocol"
+repo = "/home/nicks-dgx/dev/bit-context-protocol"
 gitlab_url = ""
 description = "Reference implementation of the Bit Context Protocol (BCP) binary format. Compact, typed serialization for LLM context — 30-50% more token-efficient than markdown/JSON. RFC Draft v0.1.0, Feb 2026. Used by @bundt/cleo --bcp flag."
 

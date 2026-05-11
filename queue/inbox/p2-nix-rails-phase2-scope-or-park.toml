@@ -42,7 +42,7 @@ acceptance = """
 """
 
 links = [
-  "~/dev/.Project-NixRails/nix-rails/",
-  "~/dev/.Project-NixRails/nix-rails/.claude/implementation-status.md",
+  "~/dev/nix-rails/",
+  "~/dev/nix-rails/.claude/implementation-status.md",
   "context/projects/nix-rails.toml"
 ]

@@ -44,6 +44,6 @@ acceptance = """
 """
 
 links = [
-  "~/dev/.Monologues/",
+  "~/dev/monologues/",
   "context/projects/monologues.toml"
 ]

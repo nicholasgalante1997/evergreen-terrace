@@ -1,6 +1,6 @@
 [project]
 name = "monologues"
-repo = "/home/nicks-dgx/dev/.Monologues"
+repo = "/home/nicks-dgx/dev/monologues"
 gitlab_url = ""
 description = "Web application with auth and casts database. Turbo monorepo, Docker. Purpose appears to be a podcast/media platform ('monologues' + 'casts'). Most recently touched project (May 7, 2026)."
 

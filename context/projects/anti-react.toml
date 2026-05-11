@@ -1,6 +1,6 @@
 [project]
 name = "anti-react"
-repo = "/home/nicks-dgx/dev/.Project-Anti-React"
+repo = "/home/nicks-dgx/dev/anti-react"
 gitlab_url = ""
 description = "Vanilla/alternative UI framework — a 'no React' approach to frontend development. Bun + Rust hybrid. Exploratory."
 

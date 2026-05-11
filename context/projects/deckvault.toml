@@ -1,6 +1,6 @@
 [project]
 name = "deckvault"
-repo = "/home/nicks-dgx/dev/.Project-Johto/Pokemon"
+repo = "/home/nicks-dgx/dev/deckvault"
 gitlab_url = ""
 description = "Competitive Pokemon TCG platform. 'From Meta → My Deck' workflow with deck analytics and local meta tracking. Production: NVIDIA DGX Spark self-hosted → Cloudflare Tunnel → deckvault.gg. Full-stack Turbo monorepo (Bun + Rust)."
 

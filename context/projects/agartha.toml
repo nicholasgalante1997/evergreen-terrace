@@ -1,6 +1,6 @@
 [project]
 name = "agartha"
-repo = "/home/nicks-dgx/dev/.Agartha"
+repo = "/home/nicks-dgx/dev/agartha"
 gitlab_url = ""
 description = "Bare-metal Rust OS. 'An operating system that is itself a cryptographic easter egg.' x86-64, UEFI, Limine bootloader. Modular monolithic kernel. No-std Rust (nightly pinned). Research phase complete, early implementation started."
 

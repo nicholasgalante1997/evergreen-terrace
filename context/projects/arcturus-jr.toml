@@ -1,6 +1,6 @@
 [project]
 name = "arcturus-jr"
-repo = "/home/nicks-dgx/dev/.Project-Arcturus/Arcturus-JR"
+repo = "/home/nicks-dgx/dev/project-arcturus"
 gitlab_url = ""
 description = "Personal technical blog. React 19 SSR, Bun, Turbo monorepo. Self-hosted. 'Void' design system: jet-black (#000000) surfaces, five vivid brand accents (azure, rose, violet, amber, orange), rose hover invariant. Active published content."
 

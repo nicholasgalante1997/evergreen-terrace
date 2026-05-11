@@ -1,6 +1,6 @@
 [project]
 name = "nix-rails"
-repo = "/home/nicks-dgx/dev/.Project-NixRails/nix-rails"
+repo = "/home/nicks-dgx/dev/nix-rails"
 gitlab_url = ""
 description = "Scaffolding engine for generating production-ready Bun Turborepo workspaces. Phase 1 MVP complete. Phase 2 (database support + Docker) planned."
 

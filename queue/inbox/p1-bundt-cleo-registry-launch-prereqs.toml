@@ -40,6 +40,6 @@ acceptance = """
 links = [
   "skills/bundt-context/SKILL.md",
   "~/dev/bundt/packages/cleo/",
-  "~/dev/.RFCs/bit-context-protocol/RFC.txt",
+  "~/dev/bit-context-protocol/RFC.txt",
   "context/projects/bit-context-protocol.toml"
 ]
