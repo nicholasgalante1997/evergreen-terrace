@@ -1,5 +1,11 @@
 {
   "extends": "@evergreen-terrace/config/typescript/react.tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

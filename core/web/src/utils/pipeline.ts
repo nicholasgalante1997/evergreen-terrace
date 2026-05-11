@@ -1,8 +1,7 @@
-import type { ComponentType, NamedExoticComponent } from "react";
+import type { ComponentType } from "react"
 
-type MemoFn = <P extends object>(c: ComponentType<P>) => NamedExoticComponent<P>;
+type HOC<P extends object> = (component: ComponentType<P>) => ComponentType<P>
 
-export function pipeline(fn: MemoFn) {
-  return <P extends object>(component: ComponentType<P>): ComponentType<P> =>
-    fn(component);
+export function pipeline<P extends object>(...fns: HOC<P>[]): (component: ComponentType<P>) => ComponentType<P> {
+  return (component) => fns.reduceRight((acc, fn) => fn(acc), component)
 }
