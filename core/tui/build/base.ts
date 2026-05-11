@@ -1,5 +1,5 @@
-import { createBaseConfig } from "@evergreen-terrace/build-utils";
+import { createBaseConfig } from "@evergreen-terrace/build-utils"
 
 export default createBaseConfig({
-  external: ["@evergreen-terrace/common"],
-});
+  external: ["@evergreen-terrace/common"]
+})
