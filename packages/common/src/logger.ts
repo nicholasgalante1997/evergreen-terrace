@@ -61,9 +61,7 @@ export function createLogger(service: string): ServiceLogger {
   const streams: pino.DestinationStream[] = [pino.destination(1)]
 
   if (logFile) {
-    streams.push(
-      pino.destination({ dest: logFile.replace("{service}", service), sync: false, append: true })
-    )
+    streams.push(pino.destination({ dest: logFile.replace("{service}", service), sync: false, append: true }))
   }
 
   if (logDb) {
