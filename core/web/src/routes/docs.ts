@@ -8,16 +8,16 @@ const DocsRoute: RouteObject = {
       lazy: async () => {
         const { default: Component } = await import("@/pages/Docs")
         return { Component }
-      },
+      }
     },
     {
       path: ":slug",
       lazy: async () => {
         const { default: Component } = await import("@/pages/Docs")
         return { Component }
-      },
-    },
-  ],
+      }
+    }
+  ]
 }
 
 export default DocsRoute

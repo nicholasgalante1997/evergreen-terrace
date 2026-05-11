@@ -2,9 +2,7 @@ export default function SchemaGuide() {
   return (
     <article className="guide">
       <h1 className="guide__title">Queue Item Schema</h1>
-      <p className="guide__lead">
-        TOML structure, field descriptions, and complete examples for all ticket types.
-      </p>
+      <p className="guide__lead">TOML structure, field descriptions, and complete examples for all ticket types.</p>
 
       <section className="guide__section">
         <h2 className="guide__h2">Schema overview</h2>
@@ -32,37 +30,116 @@ links = []`}</pre>
         <h3 className="guide__h3">[item] section</h3>
         <table className="guide__table">
           <thead>
-            <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+            <tr>
+              <th>Field</th>
+              <th>Type</th>
+              <th>Description</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td><code className="guide__code">id</code></td><td>string (UUID)</td><td>Unique identifier — generated automatically by the PM agent</td></tr>
-            <tr><td><code className="guide__code">title</code></td><td>string</td><td>Short, action-oriented title (e.g., "Implement Phase 2 analysis engine")</td></tr>
-            <tr><td><code className="guide__code">project</code></td><td>string</td><td>Project name matching a file in <code className="guide__code">context/projects/</code></td></tr>
-            <tr><td><code className="guide__code">type</code></td><td>enum</td><td>feature | bug | research | design | pm | ops</td></tr>
-            <tr><td><code className="guide__code">priority</code></td><td>enum</td><td>p0 | p1 | p2 | p3</td></tr>
-            <tr><td><code className="guide__code">created</code></td><td>ISO datetime</td><td>Creation timestamp</td></tr>
-            <tr><td><code className="guide__code">source</code></td><td>enum</td><td>manual | sentinel | jira | gitlab</td></tr>
+            <tr>
+              <td>
+                <code className="guide__code">id</code>
+              </td>
+              <td>string (UUID)</td>
+              <td>Unique identifier — generated automatically by the PM agent</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">title</code>
+              </td>
+              <td>string</td>
+              <td>Short, action-oriented title (e.g., "Implement Phase 2 analysis engine")</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">project</code>
+              </td>
+              <td>string</td>
+              <td>
+                Project name matching a file in <code className="guide__code">context/projects/</code>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">type</code>
+              </td>
+              <td>enum</td>
+              <td>feature | bug | research | design | pm | ops</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">priority</code>
+              </td>
+              <td>enum</td>
+              <td>p0 | p1 | p2 | p3</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">created</code>
+              </td>
+              <td>ISO datetime</td>
+              <td>Creation timestamp</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">source</code>
+              </td>
+              <td>enum</td>
+              <td>manual | sentinel | jira | gitlab</td>
+            </tr>
           </tbody>
         </table>
         <h3 className="guide__h3">[delegation] section</h3>
         <table className="guide__table">
           <thead>
-            <tr><th>Field</th><th>Description</th></tr>
+            <tr>
+              <th>Field</th>
+              <th>Description</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td><code className="guide__code">agent</code></td><td>Agent role to dispatch to (e.g., "eng-mid")</td></tr>
-            <tr><td><code className="guide__code">delegated_at</code></td><td>Timestamp when dispatched — set by the queue server</td></tr>
+            <tr>
+              <td>
+                <code className="guide__code">agent</code>
+              </td>
+              <td>Agent role to dispatch to (e.g., "eng-mid")</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">delegated_at</code>
+              </td>
+              <td>Timestamp when dispatched — set by the queue server</td>
+            </tr>
           </tbody>
         </table>
         <h3 className="guide__h3">[context] section</h3>
         <table className="guide__table">
           <thead>
-            <tr><th>Field</th><th>Description</th></tr>
+            <tr>
+              <th>Field</th>
+              <th>Description</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td><code className="guide__code">description</code></td><td>Full context: background, current state, why this work exists. This is the agent's primary brief.</td></tr>
-            <tr><td><code className="guide__code">acceptance</code></td><td>What "done" looks like. Write as a checklist. The PM agent formats these as markdown checkboxes.</td></tr>
-            <tr><td><code className="guide__code">links</code></td><td>Array of file paths or URLs for context the agent should read first.</td></tr>
+            <tr>
+              <td>
+                <code className="guide__code">description</code>
+              </td>
+              <td>Full context: background, current state, why this work exists. This is the agent's primary brief.</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">acceptance</code>
+              </td>
+              <td>What "done" looks like. Write as a checklist. The PM agent formats these as markdown checkboxes.</td>
+            </tr>
+            <tr>
+              <td>
+                <code className="guide__code">links</code>
+              </td>
+              <td>Array of file paths or URLs for context the agent should read first.</td>
+            </tr>
           </tbody>
         </table>
       </section>

@@ -3,16 +3,16 @@ import { Skeleton } from "./Component"
 
 const meta: Meta<typeof Skeleton> = {
   title: "Components/Skeleton",
-  component: Skeleton,
+  component: Skeleton
 }
 export default meta
 
 type Story = StoryObj<typeof Skeleton>
 
 export const Default: Story = {
-  args: { rows: 5 },
+  args: { rows: 5 }
 }
 
 export const ThreeRows: Story = {
-  args: { rows: 3 },
+  args: { rows: 3 }
 }

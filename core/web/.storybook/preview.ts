@@ -17,17 +17,17 @@ const preview: Preview = {
       toolbar: {
         icon: "circlehollow",
         items: [
-          { value: "dark",  title: "Dark" },
-          { value: "light", title: "Light" },
+          { value: "dark", title: "Dark" },
+          { value: "light", title: "Light" }
         ],
-        showName: true,
-      },
-    },
+        showName: true
+      }
+    }
   },
   parameters: {
     backgrounds: { disable: true },
-    controls: { matchers: { color: /(background|color)$/i } },
-  },
+    controls: { matchers: { color: /(background|color)$/i } }
+  }
 }
 
 export default preview
