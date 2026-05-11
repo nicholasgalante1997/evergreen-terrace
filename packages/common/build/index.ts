@@ -1,11 +1,14 @@
 import { concurrent_build } from "@evergreen-terrace/build-utils"
 import type { BuildConfig } from "bun"
 
-await concurrent_build({
-  entrypoints: ["src/index.ts"],
+const shared: Partial<BuildConfig> = {
   outdir: "./dist",
-  target: "browser",
   format: "esm",
   packages: "external",
   sourcemap: "linked"
-} as BuildConfig)
+}
+
+await concurrent_build(
+  { ...shared, entrypoints: ["src/index.ts"], target: "browser" } as BuildConfig,
+  { ...shared, entrypoints: ["src/logger.ts"], target: "bun" } as BuildConfig
+)

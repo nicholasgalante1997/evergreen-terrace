@@ -8,6 +8,11 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./logger": {
+      "import": "./dist/logger.js",
+      "types": "./dist/logger.d.ts",
+      "default": "./dist/logger.js"
     }
   },
   "scripts": {
@@ -15,10 +20,15 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
+  "dependencies": {
+    "debug": "^4.4.0",
+    "pino": "^9.6.0"
+  },
   "devDependencies": {
     "@evergreen-terrace/build-utils": "workspace:*",
+    "@evergreen-terrace/config": "workspace:*",
     "@types/bun": "latest",
-    "typescript": "^5.7.3",
-    "@evergreen-terrace/config": "workspace:*"
+    "@types/debug": "^4.1.12",
+    "typescript": "^5.7.3"
   }
 }
