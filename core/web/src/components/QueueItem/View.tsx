@@ -14,7 +14,7 @@ export function SidebarRowView({ item, selected, onClick }: SidebarRowProps) {
       }}
     >
       <div className="srow__top">
-        <span className={`srow__priority srow__priority--${p}`}>{p.toUpperCase()}</span>
+        <span className={`srow__dot srow__dot--${p}`} aria-label={p} title={p.toUpperCase()} />
         <span className="srow__title">{item.item.title}</span>
       </div>
       <div className="srow__meta">

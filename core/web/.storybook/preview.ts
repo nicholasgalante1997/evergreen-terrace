@@ -1,17 +1,33 @@
-import type { Preview } from "@storybook/react"
+import type { Preview, Decorator } from "@storybook/react"
 import "../src/index.css"
 
+const withTheme: Decorator = (Story, context) => {
+  const theme = (context.globals as Record<string, string>)["theme"] ?? "dark"
+  document.documentElement.dataset["theme"] = theme
+  return Story()
+}
+
 const preview: Preview = {
-  parameters: {
-    backgrounds: {
-      default: "dark",
-      values: [
-        { name: "dark", value: "#0d1117" },
-        { name: "surface", value: "#161b22" }
-      ]
+  decorators: [withTheme],
+  globalTypes: {
+    theme: {
+      name: "Theme",
+      description: "Global theme",
+      defaultValue: "dark",
+      toolbar: {
+        icon: "circlehollow",
+        items: [
+          { value: "dark",  title: "Dark" },
+          { value: "light", title: "Light" },
+        ],
+        showName: true,
+      },
     },
-    controls: { matchers: { color: /(background|color)$/i } }
-  }
+  },
+  parameters: {
+    backgrounds: { disable: true },
+    controls: { matchers: { color: /(background|color)$/i } },
+  },
 }
 
 export default preview
