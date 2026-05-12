@@ -1,0 +1,8 @@
+{
+  "name": "stakeholder",
+  "description": "Stakeholder communication agent. Translates technical work into business language. Writes status updates, escalation summaries, and executive-facing content.",
+  "model": "claude-sonnet-4-6",
+  "tools": ["Read", "Grep", "Glob"],
+  "skills": ["voice"],
+  "steering": ["project-context"]
+}
