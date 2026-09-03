@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@evergreen-terrace/common": "workspace:*",
-    "toml": "^3.0.0"
+    "toml": "^5.0.0"
   },
   "devDependencies": {
     "@evergreen-terrace/build-utils": "workspace:*",
