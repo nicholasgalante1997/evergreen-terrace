@@ -1,0 +1,23 @@
+{
+  "name": "@evergreen-terrace/command-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun --sourcemap=linked",
+    "dev": "bun --watch src/index.ts",
+    "start": "bun run dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@evergreen-terrace/contracts": "workspace:*",
+    "@evergreen-terrace/persistence": "workspace:*",
+    "@evergreen-terrace/service-runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@evergreen-terrace/config": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.7.3"
+  }
+}
