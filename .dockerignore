@@ -1,0 +1,11 @@
+.env
+.git
+.turbo
+node_modules
+**/node_modules
+dist
+**/dist
+out
+**/out
+context/conductor.db*
+context/beads
