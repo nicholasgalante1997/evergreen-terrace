@@ -11,6 +11,13 @@ import {
   goalSubmissionSchema,
   handoffCompletionSchema,
   handoffRequestSchema,
+  onboardingApplyCompletionSchema,
+  onboardingDiscoveryCompletionSchema,
+  onboardingStartSchema,
+  planDraftCompletionSchema,
+  planDraftStartSchema,
+  planLaunchCompletionSchema,
+  preferenceProposalSchema,
   integrationCompletionSchema,
   integrationStartSchema,
   validationRecordSchema,
@@ -30,6 +37,13 @@ import type {
   HandoffCompletion,
   HandoffRequest,
   IntegrationCompletionInput,
+  OnboardingApplyCompletionInput,
+  OnboardingDiscoveryCompletionInput,
+  OnboardingStartInput,
+  PlanDraftCompletionInput,
+  PlanDraftStartInput,
+  PlanLaunchCompletion,
+  PreferenceProposal,
   IntegrationStartInput,
   ValidationRecord,
   WorkerAssignment,
@@ -48,9 +62,20 @@ import { EvidenceNotFoundError } from "./evidence-error"
 import { IntegrationRepository, ValidationRepository } from "./evidence-repository"
 import { HandoffCommands } from "./handoff-commands"
 import { HandoffRepository } from "./handoff-repository"
+import { OnboardingCommands } from "./onboarding-commands"
+import { OnboardingRepository } from "./onboarding-repository"
+import { PlanCommands } from "./plan-commands"
+import { PlanRepository } from "./plan-repository"
+import { PreferenceCommands } from "./preference-commands"
+import { PreferenceRepository } from "./preference-repository"
 import { GoalRepository } from "./goal-repository"
 import { OutboxRepository } from "./outbox-repository"
-import { WorkerAssignmentError, WorkerLeaseConflictError, WorkerNotFoundError, WorkerTransitionError } from "./worker-error"
+import {
+  WorkerAssignmentError,
+  WorkerLeaseConflictError,
+  WorkerNotFoundError,
+  WorkerTransitionError
+} from "./worker-error"
 import { leaseTransitionRefusal } from "./worker-lease-guard"
 import { WorkerRepository } from "./worker-repository"
 import { WorkerSchedulingCommands } from "./worker-scheduling-commands"
@@ -64,6 +89,11 @@ import type {
   HandoffRequestResult,
   IntegrationCompletionResult,
   IntegrationStartResult,
+  OnboardingBeginApplyResult,
+  OnboardingCommandResult,
+  PlanBeginLaunchResult,
+  PlanCommandResult,
+  PreferenceProposalResult,
   ValidationRecordResult,
   WorkerAssignmentResult,
   WorkerBriefResult,
@@ -73,7 +103,7 @@ import type {
   WorkerStateChangeResult
 } from "./command-database.types"
 import type { CommandDecisionSummary } from "./decision-repository.types"
-import type { GoalSummary } from "./goal-repository.types"
+import type { GoalDetail, GoalSummary } from "./goal-repository.types"
 
 export class CommandDatabase extends PostgresDatabase {
   constructor(url: string) {
@@ -96,12 +126,14 @@ export class CommandDatabase extends PostgresDatabase {
       const created = await goals.create({
         baseRef: goal.baseRef,
         baseSha: goal.baseSha,
+        constraints: goal.constraints,
         createdEventId: event.eventId,
         description: goal.description,
         id: goalId,
         idempotencyKey: goal.idempotencyKey,
         priorityClass: goal.priorityClass,
         projectId: goal.projectId,
+        references: goal.references,
         title: goal.title
       })
 
@@ -123,7 +155,7 @@ export class CommandDatabase extends PostgresDatabase {
     return new GoalRepository(this.sql).list(projectId)
   }
 
-  async getGoal(goalId: string): Promise<GoalSummary> {
+  async getGoal(goalId: string): Promise<GoalDetail> {
     const goal = await new GoalRepository(this.sql).findById(goalId)
     if (goal === undefined) {
       throw new EvidenceNotFoundError(`Goal not found: ${goalId}`)
@@ -199,6 +231,12 @@ export class CommandDatabase extends PostgresDatabase {
       await decisions.resolve(decisionId, resolution, event.eventId)
       await new EventStore(transaction).append(event)
       await new OutboxRepository(transaction).enqueue(event)
+      await new PreferenceCommands(transaction).settle({
+        ...decision,
+        resolution,
+        resolvedEventId: event.eventId,
+        status: resolution.status
+      })
       return { decisionId, eventId: event.eventId, resolved: true, status: resolution.status }
     })
   }
@@ -332,9 +370,14 @@ export class CommandDatabase extends PostgresDatabase {
     return this.transaction((transaction) => new EvidenceCommands(transaction).startIntegration(start))
   }
 
-  async completeIntegration(integrationId: string, input: IntegrationCompletionInput): Promise<IntegrationCompletionResult> {
+  async completeIntegration(
+    integrationId: string,
+    input: IntegrationCompletionInput
+  ): Promise<IntegrationCompletionResult> {
     const completion = integrationCompletionSchema.parse(input)
-    return this.transaction((transaction) => new EvidenceCommands(transaction).completeIntegration(integrationId, completion))
+    return this.transaction((transaction) =>
+      new EvidenceCommands(transaction).completeIntegration(integrationId, completion)
+    )
   }
 
   async getIntegration(integrationId: string) {
@@ -373,6 +416,90 @@ export class CommandDatabase extends PostgresDatabase {
 
   async listGoalHandoffs(goalId: string) {
     return new HandoffRepository(this.sql).listByGoal(goalId)
+  }
+
+  async startPlanDraft(input: PlanDraftStartInput): Promise<PlanCommandResult> {
+    const start = planDraftStartSchema.parse(input)
+    return this.transaction((transaction) => new PlanCommands(transaction).startDraft(start))
+  }
+
+  async completePlanDraft(planId: string, input: PlanDraftCompletionInput): Promise<PlanCommandResult> {
+    const completion = planDraftCompletionSchema.parse(input)
+    return this.transaction((transaction) => new PlanCommands(transaction).completeDraft(planId, completion))
+  }
+
+  async beginPlanLaunch(planId: string): Promise<PlanBeginLaunchResult> {
+    return this.transaction((transaction) => new PlanCommands(transaction).beginLaunch(planId))
+  }
+
+  async completePlanLaunch(planId: string, input: PlanLaunchCompletion): Promise<PlanCommandResult> {
+    const launch = planLaunchCompletionSchema.parse(input)
+    return this.transaction((transaction) => new PlanCommands(transaction).completeLaunch(planId, launch))
+  }
+
+  async getPlan(planId: string) {
+    const plan = await new PlanRepository(this.sql).findById(planId)
+    if (plan === undefined) {
+      throw new EvidenceNotFoundError(`Plan not found: ${planId}`)
+    }
+    return plan
+  }
+
+  async listGoalPlans(goalId: string) {
+    return new PlanRepository(this.sql).listByGoal(goalId)
+  }
+
+  async listActiveProjectPlans(projectId: string) {
+    return new PlanRepository(this.sql).listActiveByProject(projectId)
+  }
+
+  async startOnboarding(input: OnboardingStartInput): Promise<OnboardingCommandResult> {
+    const start = onboardingStartSchema.parse(input)
+    return this.transaction((transaction) => new OnboardingCommands(transaction).start(start))
+  }
+
+  async completeOnboardingDiscovery(
+    onboardingId: string,
+    input: OnboardingDiscoveryCompletionInput
+  ): Promise<OnboardingCommandResult> {
+    const completion = onboardingDiscoveryCompletionSchema.parse(input)
+    return this.transaction((transaction) =>
+      new OnboardingCommands(transaction).completeDiscovery(onboardingId, completion)
+    )
+  }
+
+  async beginOnboardingApply(onboardingId: string): Promise<OnboardingBeginApplyResult> {
+    return this.transaction((transaction) => new OnboardingCommands(transaction).beginApply(onboardingId))
+  }
+
+  async completeOnboardingApply(
+    onboardingId: string,
+    input: OnboardingApplyCompletionInput
+  ): Promise<OnboardingCommandResult> {
+    const completion = onboardingApplyCompletionSchema.parse(input)
+    return this.transaction((transaction) => new OnboardingCommands(transaction).completeApply(onboardingId, completion))
+  }
+
+  async getOnboarding(onboardingId: string) {
+    const onboarding = await new OnboardingRepository(this.sql).findById(onboardingId)
+    if (onboarding === undefined) {
+      throw new EvidenceNotFoundError(`Onboarding not found: ${onboardingId}`)
+    }
+    return onboarding
+  }
+
+  async listProjectOnboardings(projectId: string) {
+    return new OnboardingRepository(this.sql).listByProject(projectId)
+  }
+
+  async proposePreference(input: PreferenceProposal): Promise<PreferenceProposalResult> {
+    const proposal = preferenceProposalSchema.parse(input)
+    return this.transaction((transaction) => new PreferenceCommands(transaction).propose(proposal))
+  }
+
+  async listPreferences(projectId: string | null, promotedOnly: boolean) {
+    const preferences = new PreferenceRepository(this.sql)
+    return promotedOnly ? preferences.listPromoted(projectId) : preferences.listAll(projectId)
   }
 
   async listGoalWorkers(goalId: string) {
@@ -562,6 +689,88 @@ export class CommandDatabase extends PostgresDatabase {
         UNIQUE (project_id, idempotency_key),
         CHECK ((status = 'completed') = (result IS NOT NULL))
       );
+
+      ALTER TABLE evergreen.goals
+        ADD COLUMN IF NOT EXISTS "references" JSONB NOT NULL DEFAULT '[]'::jsonb,
+        ADD COLUMN IF NOT EXISTS constraints JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+      CREATE TABLE IF NOT EXISTS evergreen.plans (
+        id UUID PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        goal_id UUID NOT NULL REFERENCES evergreen.goals(id),
+        revision INTEGER NOT NULL CHECK (revision > 0),
+        revision_of UUID REFERENCES evergreen.plans(id),
+        feedback TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL CHECK (status IN ('drafting', 'needs_input', 'proposed', 'launching', 'launched', 'rejected', 'failed')),
+        detail TEXT NOT NULL DEFAULT '',
+        mayor JSONB NOT NULL,
+        proposal JSONB,
+        scope_overlaps JSONB NOT NULL DEFAULT '[]'::jsonb,
+        flagged_risks JSONB NOT NULL DEFAULT '[]'::jsonb,
+        decision_id UUID UNIQUE REFERENCES evergreen.decisions(id),
+        question_decision_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+        launch JSONB,
+        idempotency_key TEXT NOT NULL,
+        aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence > 0),
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (project_id, idempotency_key),
+        UNIQUE (goal_id, revision),
+        CHECK ((status = 'launched') = (launch IS NOT NULL))
+      );
+
+      CREATE INDEX IF NOT EXISTS plans_project_status_idx
+        ON evergreen.plans (project_id, status, created_at);
+
+      CREATE TABLE IF NOT EXISTS evergreen.onboardings (
+        id UUID PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        revision INTEGER NOT NULL CHECK (revision > 0),
+        revision_of UUID REFERENCES evergreen.onboardings(id),
+        feedback TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL CHECK (status IN ('discovering', 'proposed', 'applying', 'applied', 'declined', 'failed')),
+        detail TEXT NOT NULL DEFAULT '',
+        discovery JSONB NOT NULL,
+        packet JSONB,
+        decision_id UUID UNIQUE REFERENCES evergreen.decisions(id),
+        result JSONB,
+        idempotency_key TEXT NOT NULL,
+        aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence > 0),
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE (project_id, idempotency_key),
+        UNIQUE (project_id, revision),
+        CHECK ((status = 'applied') = (result IS NOT NULL)),
+        CHECK ((packet IS NULL) = (decision_id IS NULL))
+      );
+
+      CREATE TABLE IF NOT EXISTS evergreen.preferences (
+        id UUID PRIMARY KEY,
+        scope TEXT NOT NULL CHECK (scope IN ('global', 'project')),
+        project_id TEXT,
+        key TEXT NOT NULL,
+        category TEXT NOT NULL,
+        value TEXT NOT NULL,
+        evidence JSONB NOT NULL,
+        rationale TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('proposed', 'promoted', 'rejected', 'superseded')),
+        decision_id UUID UNIQUE REFERENCES evergreen.decisions(id),
+        detail TEXT NOT NULL DEFAULT '',
+        superseded_by UUID REFERENCES evergreen.preferences(id),
+        idempotency_key TEXT NOT NULL,
+        aggregate_sequence INTEGER NOT NULL CHECK (aggregate_sequence > 0),
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        UNIQUE NULLS NOT DISTINCT (project_id, idempotency_key),
+        CHECK ((scope = 'project') = (project_id IS NOT NULL))
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS preferences_one_promoted_idx
+        ON evergreen.preferences (scope, COALESCE(project_id, ''), key)
+        WHERE status = 'promoted';
 
       CREATE TABLE IF NOT EXISTS evergreen.outbox (
         id BIGSERIAL PRIMARY KEY,

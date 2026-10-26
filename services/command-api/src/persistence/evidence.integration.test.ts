@@ -48,6 +48,7 @@ describe.skipIf(url === undefined)("evidence commands (PostgreSQL)", () => {
     mergeOrder: [workerId],
     overlaps: [],
     resolutions: [],
+    scopeViolations: [],
     selection: null,
     sources: [
       {
@@ -113,23 +114,49 @@ describe.skipIf(url === undefined)("evidence commands (PostgreSQL)", () => {
     const replay = await database.recordValidation(record)
     expect(first.created).toBe(true)
     expect(replay).toEqual({ ...first, created: false })
-    await expect(database.recordValidation(validation({ id: crypto.randomUUID(), type: "worker" }, "passed"))).rejects.toThrow(
-      /does not belong/
-    )
+    await expect(
+      database.recordValidation(validation({ id: crypto.randomUUID(), type: "worker" }, "passed"))
+    ).rejects.toThrow(/does not belong/)
     expect((await database.listGoalValidations(goalId)).map((entry) => entry.id)).toContain(first.validationId)
   })
 
   test("allocates attempts, pins the goal base, and enforces completion evidence", async () => {
     await expect(
-      database.startIntegration({ baseRef: "main", baseSha: "e".repeat(40), goalId, idempotencyKey: `bad-base-${run}`, projectId })
+      database.startIntegration({
+        baseRef: "main",
+        baseSha: "e".repeat(40),
+        goalId,
+        idempotencyKey: `bad-base-${run}`,
+        projectId
+      })
     ).rejects.toThrow(/recorded base/)
 
-    const first = await database.startIntegration({ baseRef: "main", baseSha, goalId, idempotencyKey: `integration-1-${run}`, projectId })
-    const replay = await database.startIntegration({ baseRef: "main", baseSha, goalId, idempotencyKey: `integration-1-${run}`, projectId })
-    const second = await database.startIntegration({ baseRef: "main", baseSha, goalId, idempotencyKey: `integration-2-${run}`, projectId })
+    const first = await database.startIntegration({
+      baseRef: "main",
+      baseSha,
+      goalId,
+      idempotencyKey: `integration-1-${run}`,
+      projectId
+    })
+    const replay = await database.startIntegration({
+      baseRef: "main",
+      baseSha,
+      goalId,
+      idempotencyKey: `integration-1-${run}`,
+      projectId
+    })
+    const second = await database.startIntegration({
+      baseRef: "main",
+      baseSha,
+      goalId,
+      idempotencyKey: `integration-2-${run}`,
+      projectId
+    })
     expect([first.attempt, replay.attempt, replay.created, second.attempt]).toEqual([1, 1, false, 2])
 
-    await expect(database.completeIntegration(first.integrationId, completion({}))).rejects.toThrow(/is assigned, not completed/)
+    await expect(database.completeIntegration(first.integrationId, completion({}))).rejects.toThrow(
+      /is assigned, not completed/
+    )
   })
 
   test("validated integrations require passing validation of the integration head", async () => {
@@ -145,9 +172,14 @@ describe.skipIf(url === undefined)("evidence commands (PostgreSQL)", () => {
       idempotencyKey: `integration-validated-${run}`,
       projectId
     })
-    const failing = await database.recordValidation(validation({ id: integration.integrationId, type: "integration" }, "failed"))
+    const failing = await database.recordValidation(
+      validation({ id: integration.integrationId, type: "integration" }, "failed")
+    )
     await expect(
-      database.completeIntegration(integration.integrationId, completion({ status: "validated", validationId: failing.validationId }))
+      database.completeIntegration(
+        integration.integrationId,
+        completion({ status: "validated", validationId: failing.validationId })
+      )
     ).rejects.toThrow(/contradicts/)
     await expect(
       database.completeIntegration(
@@ -156,7 +188,9 @@ describe.skipIf(url === undefined)("evidence commands (PostgreSQL)", () => {
       )
     ).rejects.toThrow(/head commit/)
 
-    const passing = await database.recordValidation(validation({ id: integration.integrationId, type: "integration" }, "passed"))
+    const passing = await database.recordValidation(
+      validation({ id: integration.integrationId, type: "integration" }, "passed")
+    )
     const done = await database.completeIntegration(
       integration.integrationId,
       completion({ status: "validated", validationId: passing.validationId })
@@ -167,9 +201,9 @@ describe.skipIf(url === undefined)("evidence commands (PostgreSQL)", () => {
       completion({ status: "validated", validationId: passing.validationId })
     )
     expect(again.completed).toBe(false)
-    await expect(database.completeIntegration(integration.integrationId, completion({ status: "blocked" }))).rejects.toThrow(
-      /already ended/
-    )
+    await expect(
+      database.completeIntegration(integration.integrationId, completion({ status: "blocked" }))
+    ).rejects.toThrow(/already ended/)
     await expect(
       database.recordValidation(validation({ id: integration.integrationId, type: "integration" }, "passed"))
     ).rejects.toThrow(/already ended/)

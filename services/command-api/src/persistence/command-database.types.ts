@@ -1,6 +1,12 @@
 /** @module Command database result types. */
 
-import type { HandoffStatus, WorkerState } from "@evergreen-terrace/contracts"
+import type {
+  HandoffStatus,
+  OnboardingStatus,
+  PlanStatus,
+  PreferenceStatus,
+  WorkerState
+} from "@evergreen-terrace/contracts"
 import type { IntegrationStatus } from "./evidence-repository.types"
 
 export interface HandoffRequestResult {
@@ -105,4 +111,40 @@ export interface WorkerStateChangeResult {
   state: "running" | "awaiting_decision" | "completed" | "failed" | "cancelled"
   transitioned: boolean
   workerId: string
+}
+
+export interface PlanCommandResult {
+  created: boolean
+  decisionId?: string
+  planId: string
+  revision: number
+  status: PlanStatus
+}
+
+export interface PlanBeginLaunchResult {
+  planId: string
+  resumed: boolean
+  status: PlanStatus
+}
+
+export interface OnboardingCommandResult {
+  created: boolean
+  decisionId?: string
+  onboardingId: string
+  revision: number
+  status: OnboardingStatus
+}
+
+export interface OnboardingBeginApplyResult {
+  onboardingId: string
+  resumed: boolean
+  status: OnboardingStatus
+}
+
+export interface PreferenceProposalResult {
+  created: boolean
+  decisionId: string | null
+  preferenceId: string
+  route: "automatic" | "decision"
+  status: PreferenceStatus
 }

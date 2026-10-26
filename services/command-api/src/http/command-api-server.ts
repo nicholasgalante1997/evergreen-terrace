@@ -7,6 +7,9 @@ import { decisionQueryRoutes } from "./decision-query-routes"
 import { evidenceRoutes } from "./evidence-routes"
 import { goalRoutes } from "./goal-routes"
 import { handoffRoutes } from "./handoff-routes"
+import { onboardingRoutes } from "./onboarding-routes"
+import { planRoutes } from "./plan-routes"
+import { preferenceRoutes } from "./preference-routes"
 import { workerCommandRoutes } from "./worker-command-routes"
 import { workerQueryRoutes } from "./worker-query-routes"
 import { workerSchedulingRoutes } from "./worker-scheduling-routes"
@@ -28,7 +31,10 @@ export class CommandApiServer extends HttpServer {
       ...workerQueryRoutes(options.database),
       ...workerSchedulingRoutes(options.database),
       ...evidenceRoutes(options.database),
-      ...handoffRoutes(options.database)
+      ...handoffRoutes(options.database),
+      ...planRoutes(options.database),
+      ...onboardingRoutes(options.database),
+      ...preferenceRoutes(options.database)
     )
   }
 

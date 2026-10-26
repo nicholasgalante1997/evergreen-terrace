@@ -13,7 +13,8 @@
   "dependencies": {
     "@evergreen-terrace/contracts": "workspace:*",
     "@evergreen-terrace/persistence": "workspace:*",
-    "@evergreen-terrace/service-runtime": "workspace:*"
+    "@evergreen-terrace/service-runtime": "workspace:*",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@evergreen-terrace/config": "workspace:*",
