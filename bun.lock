@@ -135,6 +135,15 @@
         "typescript": "^5.7.3",
       },
     },
+    "internal/recovery": {
+      "name": "@evergreen-terrace/recovery",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@evergreen-terrace/config": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.7.3",
+      },
+    },
     "packages/common": {
       "name": "@evergreen-terrace/common",
       "version": "0.1.0",
@@ -228,10 +237,28 @@
         "@evergreen-terrace/contracts": "workspace:*",
         "@evergreen-terrace/persistence": "workspace:*",
         "@evergreen-terrace/service-runtime": "workspace:*",
+        "zod": "^4.4.3",
       },
       "devDependencies": {
         "@evergreen-terrace/config": "workspace:*",
         "@types/bun": "latest",
+        "typescript": "^5.7.3",
+      },
+    },
+    "services/console": {
+      "name": "@evergreen-terrace/console",
+      "version": "0.1.0",
+      "dependencies": {
+        "@evergreen-terrace/service-runtime": "workspace:*",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@evergreen-terrace/config": "workspace:*",
+        "@types/bun": "latest",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
         "typescript": "^5.7.3",
       },
     },
@@ -423,6 +450,8 @@
 
     "@evergreen-terrace/config": ["@evergreen-terrace/config@workspace:packages/config"],
 
+    "@evergreen-terrace/console": ["@evergreen-terrace/console@workspace:services/console"],
+
     "@evergreen-terrace/contracts": ["@evergreen-terrace/contracts@workspace:packages/contracts"],
 
     "@evergreen-terrace/desktop": ["@evergreen-terrace/desktop@workspace:core/desktop"],
@@ -446,6 +475,8 @@
     "@evergreen-terrace/queue-server": ["@evergreen-terrace/queue-server@workspace:core/queue-server"],
 
     "@evergreen-terrace/read-api": ["@evergreen-terrace/read-api@workspace:services/read-api"],
+
+    "@evergreen-terrace/recovery": ["@evergreen-terrace/recovery@workspace:internal/recovery"],
 
     "@evergreen-terrace/sentinel": ["@evergreen-terrace/sentinel@workspace:core/sentinel"],
 
@@ -1577,6 +1608,8 @@
 
     "@evergreen-terrace/command-api/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
+    "@evergreen-terrace/console/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
+
     "@evergreen-terrace/contracts/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
     "@evergreen-terrace/host-bridge/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
@@ -1592,6 +1625,8 @@
     "@evergreen-terrace/projection/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
     "@evergreen-terrace/read-api/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
+
+    "@evergreen-terrace/recovery/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
     "@evergreen-terrace/service-runtime/@types/bun": ["@types/bun@1.4.4", "", { "dependencies": { "bun-types": "1.4.4" } }, "sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ=="],
 
@@ -1701,6 +1736,8 @@
 
     "@evergreen-terrace/command-api/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
+    "@evergreen-terrace/console/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
     "@evergreen-terrace/contracts/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@evergreen-terrace/host-bridge/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
@@ -1716,6 +1753,8 @@
     "@evergreen-terrace/projection/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@evergreen-terrace/read-api/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
+
+    "@evergreen-terrace/recovery/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
     "@evergreen-terrace/service-runtime/@types/bun/bun-types": ["bun-types@1.4.4", "", { "dependencies": { "@types/node": "*", "undici-types": "*" } }, "sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ=="],
 
