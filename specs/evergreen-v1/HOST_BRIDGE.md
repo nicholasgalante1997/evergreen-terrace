@@ -54,6 +54,15 @@ are not implemented in this slice.
 | `evergreen.handoff.request`   | Plans the push and PR for a validated integration.                                | Records the plan and an `external_side_effect` decision card; never contacts GitHub.                              |
 | `evergreen.handoff.execute`   | Performs an approved plan exactly: push, open or reuse the PR, supersede comment. | Refused until approved; no force push, no merge; a re-run reconciles finished steps.                              |
 | `evergreen.handoff.status`    | Lists a goal's handoffs with plan, decision, result, and exact PR body.           | Read-only, strongly consistent command lookup.                                                                    |
+| `evergreen.onboarding.discover` | Runs 2-4 read-only discovery agents and the mayor over the base commit, then records one approval packet. | Read-only sessions; the host composes `.et/config.toml` itself; one `onboarding` decision card. Never fetches or writes. |
+| `evergreen.onboarding.apply` | Commits exactly the approved `.et/config.toml` on a new factory branch and validates it there. | Refused until the card is resolved; never touches the active checkout or a protected branch; never pushes. |
+| `evergreen.onboarding.status` | Lists this repository's onboarding attempts with packet, card, and result. | Read-only, strongly consistent command lookup. |
+| `evergreen.plan.draft` | The mayor plans a submitted goal: contract, scope-claimed tasks, dependency graph, briefs, risks. | Read-only mayor session; output schema- and host-checked; one `plan_approval` card, or `ambiguity` cards for questions. |
+| `evergreen.plan.launch` | Creates one worktree and worker per approved task, records briefs, starts the schedule. | Refused until the plan card is resolved; any resolution but `approve` rejects the plan; idempotent after a crash. |
+| `evergreen.plan.status` | Lists a goal's plan revisions with full briefs, scope claims, overlaps, and launched workers. | Read-only, strongly consistent command lookup. |
+| `evergreen.preference.propose` | Proposes a learned tone/verbosity/runner/workflow/convention preference. | Low-impact with 2+ distinct evidence and no change to a held value promotes; anything else is a `preference` card. Policy keys are refused. |
+| `evergreen.preference.list` | Lists the preferences in effect for this project (optionally with history). | Read-only. |
+| `evergreen.jarvis.ask` | Jarvis answers a question from a host-written read-model snapshot, with cited claims and proposed actions. | Read-only session over the evidence only; citations and proposal arguments are host-checked; performs no action. |
 
 Tool arguments are strict JSON schemas. Tool errors return an MCP tool result
 with `isError: true`; malformed JSON-RPC receives a JSON-RPC error response.
@@ -402,6 +411,126 @@ capability (`GitHubPort`) has no merge operation; merging stays with the
 engineer. `gh` runs with the engineer's installed authentication. Body and
 comment files are preserved under `$ET_FACTORY_ROOT/handoffs/<handoff-id>/`.
 
-The current workspace is the first onboarded repository. Its policy is at
-`.et/config.toml`; it establishes the same guardrails for factory work on
-Evergreen Terrace itself.
+## Read-only agent sessions
+
+The mayor, discovery agents, and Jarvis run as ACP sessions that cannot write.
+Each gets its own detached checkout (or, for Jarvis, an evidence directory)
+under `$ET_FACTORY_ROOT/checkouts/` with no branch, mounted with `--ro-bind`.
+`ReadOnlyPermissionResolver` never raises a card: it allows reads inside the
+checkout and the same confined read-only commands a worker may run unattended,
+and refuses everything else (`via: "policy"`, rule `read_only_session`), so
+the agent sees the refusal and carries on.
+
+Agent output is never trusted. `runStructuredSession` extracts the last fenced
+JSON block, validates it with the strict Zod contract and the host's own
+checks, and on failure sends up to two repair turns in the same session listing
+every problem. A session that never produces valid output is recorded as a
+failure, not guessed at.
+
+Every Bubblewrap sandbox (workers included) binds the repository's Git common
+directory read-only after the private `/tmp`. Without it, a repository under
+`/tmp` was invisible to its worktree (`not a git repository`). Git metadata is
+read-only for every session; the host makes all factory commits.
+
+## Mayor planning
+
+`evergreen.plan.draft` records intent (`plan.updated: drafting`) before the
+mayor session starts. The mayor reads the goal contract (description,
+references, constraints), the `.et` capacity and checks, the promoted
+preferences, every other active goal's scope claims, and, for a revision, the
+previous plan plus the engineer's answers and revision note. It returns:
+
+- a bounded contract (acceptance, out of scope, assumptions);
+- one to six tasks (at most `workers.max_per_repository`), each with a unique
+  key and role, a self-contained brief, acceptance, `dependsOn`, and a **scope
+  claim** listing every file or glob it may change;
+- risks by category, validation notes, `integrateAfterGoalIds`;
+- or up to four questions, in which case it returns no tasks.
+
+The host rejects, with a repair turn, a cycle, an unknown or self dependency,
+duplicate keys or roles, a reserved role (`integration`, `integrator`, `mayor`,
+`discovery`), too many tasks, an unknown `integrateAfterGoalIds` entry, and two
+tasks whose claims share an existing file without a dependency path between
+them. It then records the plan with its cross-goal claim overlaps and the risks
+`.et` flags, and creates one `plan_approval` card that restates every task,
+scope, dependency, and brief digest (`approve` / `revise` / `reject`). Questions
+become `ambiguity` cards instead. Drafting the next revision is refused until
+every question is answered; the answers and any revision note are passed to
+the mayor verbatim. A draft interrupted by a bridge restart is failed, never
+resumed.
+
+`evergreen.plan.launch` moves an approved plan to `launching`, then creates the
+workers in dependency order with idempotency keys `plan-<planId>-<taskKey>`
+(reusing any already created), records each brief (`plannedWorkerBrief`, which
+restates the contract and scope claim), records `launched` with the task-to-
+worker map, and starts the schedule. A dependent worker starts from the same
+base commit and does not see its prerequisite's changes; the mayor is told so.
+
+The integration train enforces claims: when the goal has a launched plan, a
+worker that changed a file outside its claim makes the attempt `blocked`
+before anything merges, with `scopeViolations` as evidence. Excluding that
+worker (with a rationale) integrates the rest.
+
+## Repository onboarding
+
+`evergreen.onboarding.discover` collects deterministic facts from Git itself
+(canonical remote with credentials stripped and SSH aliases resolved through
+`ssh -G`, branches, base and HEAD SHAs, default branch, manifests, top-level
+layout), then runs two to four discovery agents over disjoint areas (git,
+topology, validation, risk, conventions), each in its own read-only checkout
+of the base commit. Every finding must cite a file (and line) or the read-only
+command used; the host checks each file citation against the base commit and
+records the ones it could not verify. The mayor consolidates the reports; every
+proposed check and setup step needs cited evidence and every base ref must be
+a local branch.
+
+The host, not an agent, writes the policy (`composePolicy`): identity from Git;
+capacity, priorities, branch classes, and permissions from the existing policy
+or the safe defaults; protection only ever added to; and all seven safety-floor
+risk categories always require a card. The TOML is rendered and proven to parse
+back to the same policy. One `onboarding` card carries the exact text and its
+digest, the evidence, risks, ambiguities, module map, and profile.
+
+`evergreen.onboarding.apply` creates a worktree on
+`<class prefix>et-onboarding-<id8>` at the base commit, writes exactly the
+approved text, verifies that the commit changes only `.et/config.toml`, and
+runs the policy's validation there. Merging it is the engineer's action.
+
+### First-goal gate
+
+`evergreen.goal.submit` now accepts a goal only when `.et/config.toml` is
+committed at the base commit, the working copy's policy equals it, and the
+canonical remote still identifies `project_id`. Each refusal names its reason.
+
+## Learned preferences
+
+`evergreen.preference.propose` records a preference for the global profile or
+this project. Categories are tone, verbosity, runner, workflow,
+language_convention, and framework_convention; keys under `policy`,
+`permissions`, `risk`, `validation`, `branches`, `workers`, or `goals` are
+refused, because policy changes only through `.et` on a factory branch. A
+low-impact preference (tone, verbosity, runner, workflow) with at least two
+distinct pieces of evidence that does not change a value already held is
+promoted at once; anything else becomes a `preference` card, settled in the
+same transaction as the card's resolution. A promotion supersedes the previous
+value for that key. The mayor sees promoted preferences; Jarvis sees tone and
+verbosity only.
+
+## Jarvis
+
+`evergreen.jarvis.ask` writes a fresh evidence directory from the read API (one
+JSON file per record kind, scoped to a goal and its events when one is named)
+and runs a read-only session whose whole world is that directory. The answer
+must cite record IDs that exist in it, list missing evidence, and may propose
+up to four actions from a fixed list (`plan.draft`, `plan.launch`,
+`schedule.resume`, `validation.run`, `integration.run`, `integration.resolve`,
+`handoff.request`) whose arguments are checked against each tool's own input
+schema. Approving cards and executing handoffs are deliberately not proposable.
+Jarvis performs no action. Question, evidence, transcript, and answer are kept
+under `$ET_FACTORY_ROOT/jarvis/<question-id>/`. `ET_JARVIS_ADAPTER` selects its
+adapter independently of workers.
+
+The current workspace carries its policy at `.et/config.toml` on the
+`feat/create-et` branch. Under the first-goal gate it counts as onboarded only
+at a base that contains that commit, so goals based on `main` are refused until
+the branch is merged.

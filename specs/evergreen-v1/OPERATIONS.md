@@ -64,6 +64,22 @@ The HTTP bridge binds only `127.0.0.1:7450`. The stdio bridge reserves stdout
 for JSON-RPC; inspect its stderr for lifecycle diagnostics. See
 [`HOST_BRIDGE.md`](HOST_BRIDGE.md) for the tool and session contract.
 
+## Console
+
+The console is a native loopback process, like the bridge, rather than a
+container: it is the bridge's MCP client, and running it in Compose would
+require the bridge to listen beyond loopback.
+
+```bash
+bun run --cwd services/console build
+bun run console          # http://127.0.0.1:7460/
+```
+
+It reads only the read API (`ET_READ_API_URL`, default
+`http://127.0.0.1:7440`) and acts only through the HTTP bridge
+(`ET_HOST_BRIDGE_URL`, default `http://127.0.0.1:7450/mcp`). See
+[`CONSOLE.md`](CONSOLE.md).
+
 ## Normal recovery
 
 1. Inspect `bun run factory:status` and `bun run factory:logs`.
@@ -85,24 +101,42 @@ goal or worker.
 - Command database: authoritative goal state, immutable events, and outbox.
 - Kafka volume: event stream and consumer offsets.
 - Read database: rebuildable projection and projection watermark.
-- Factory worktree/artifact roots: future host-side evidence, outside containers.
+- Factory root: worktrees, immutable records, artifacts, handoff bodies, and
+  Jarvis evidence, on the host outside containers.
 
-Automated local recovery snapshots are a required later v1 slice and are **not
-implemented yet**. Until then, before any operator-directed destructive database
-or volume operation, stop and take an explicit local backup under an operator
-chosen path. Record its location and source service in a decision record.
+## Recovery snapshots
 
-Manual snapshot, without role password hashes (`pg_dump` per database, not
-`pg_dumpall`):
-
-```sh
-dir=~/.local/state/evergreen-terrace/backups/$(date -u +%Y%m%dT%H%M%SZ)-<reason>
-mkdir -p "$dir" && chmod 700 "$dir"
-for db in evergreen_command evergreen_read; do
-  docker exec evergreen-postgres pg_dump -U evergreen_admin --format=custom "$db" > "$dir/$db.dump"
-done
-chmod 600 "$dir"/*.dump
+```bash
+bun run factory:snapshot snapshot --reason <why> [--project-root <repo>]... [--artifacts]
+bun run factory:snapshot verify ~/.local/state/evergreen-terrace/backups/<snapshot>
+bun run factory:snapshot list
 ```
+
+A snapshot lands in `$ET_BACKUP_ROOT` (default
+`~/.local/state/evergreen-terrace/backups/<UTC timestamp>-<reason>/`, mode
+`0700`, files `0600`) and contains:
+
+| Path | Source |
+| --- | --- |
+| `postgres/evergreen_command.dump`, `postgres/evergreen_read.dump` | `pg_dump --format=custom` per database; no `pg_dumpall`, so no role password hashes. |
+| `kafka/evergreen.events.v1.ndjson` | A group-less console consumer reading the topic from the beginning. The message count must equal the sum of the partition end offsets, or the snapshot fails. |
+| `factory/factory.tar.gz` | `records/`, `handoffs/`, and `jarvis/` from `$ET_FACTORY_ROOT`; `artifacts/` only with `--artifacts`. Worktrees are Git state and are not archived. |
+| `et-history/<n>-<repo>.patch` | `git log --patch -- .et` for each `--project-root` (default: the current directory). |
+| `manifest.json` | SHA-256 and size of every file, the topic offsets, and anything skipped. |
+
+`verify` re-hashes every file, reports missing, changed, or unlisted ones, and
+checks each dump with `pg_restore --list`. A failed snapshot keeps its directory
+with an `INCOMPLETE.txt` naming the error; it never verifies.
+
+`bun run factory:up` takes a `pre-up` snapshot first whenever the stack is
+running, because an upgrade rebuilds the services and their migrations run on
+start. Take one by hand before any other destructive operation. Snapshots are
+never deleted automatically (there is no v1 cleanup).
+
+Restoring is an explicit operator action: stop the services that use a
+database, then `pg_restore --clean --if-exists -d <database>` the dump inside
+the Postgres container. The read database can also be rebuilt by replaying the
+topic into a fresh projection.
 
 ## Rotating database credentials
 
@@ -159,18 +193,18 @@ Bun auto-loads `.env` for the host bridge too. Optional settings left empty
   a goal locally and records conflicts. It does not resolve conflicts:
   `conflicted` means rework the sources, then run a new attempt. Pushing and
   opening the goal PR go through `evergreen.handoff.request` and
-  `evergreen.handoff.execute`, gated by a decision card. The browser console
-  and decision-card UI remain later slices, so cards are resolved with
-  `evergreen.decision.resolve`.
+  `evergreen.handoff.execute`, gated by a decision card. Cards are resolved in
+  the console or with `evergreen.decision.resolve`.
 - Validation needs Bubblewrap with unprivileged network namespaces
   (`bwrap --unshare-net` must work). A project whose checks need dependencies
   must list a dependency install under `[validation] setup`, because fresh
   factory worktrees have no `node_modules`.
-- The command API, projection, and read API must be rebuilt together for the
-  scheduler, integration, and handoff slices. The new `worker.brief_recorded`,
-  `worker.lease_*`, `validation.completed`, `integration.updated`, and
-  `handoff.updated` events fail strict validation in an older projection
-  consumer.
+- **Rebuild every contract consumer together**: command API, outbox relay,
+  projection, and read API (`bun run factory:up` rebuilds them all). An older
+  outbox relay rejects new event types under strict envelope validation and
+  stops publishing; because the outbox is ordered, everything behind that row
+  waits. Nothing is lost: rows stay unpublished until a current relay sends
+  them. An older projection rejects them the same way and stops consuming.
 - **JSONB normalization on upgrade.** Earlier writers stored every JSONB value
   (event envelopes, outbox rows, decision options, and so on) as a JSON
   *string* scalar, because Bun's driver re-encodes text bound to a `::jsonb`

@@ -38,6 +38,8 @@ docsite/        @bundt/dxdocs documentation site
 | conductor     | 2731 |
 | v1 command API | 7410 |
 | v1 read API | 7440 |
+| v1 host bridge (HTTP MCP, native) | 7450 |
+| v1 console (native) | 7460 |
 
 ## Build Pipeline — Non-Negotiable
 

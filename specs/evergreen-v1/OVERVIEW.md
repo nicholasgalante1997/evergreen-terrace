@@ -6,9 +6,12 @@
 TOML queue, legacy conductor, and role-agent system remain in the repository as
 historical, additive systems; v1 must not extend their lifecycle semantics.
 
-The Compose event foundation is implemented. The host bridge, MCP transports,
-onboarding, ACP execution, integration train, console, and Jarvis remain
-separate delivery slices; the foundation is not yet a goal-execution product.
+Delivery slices 1-6 are implemented and have run live: the Compose control
+plane, the host bridge and MCP transports, repository onboarding, mayor
+planning, ACP execution with the scheduler and integration train, GitHub
+handoff, the console, Jarvis, and local recovery snapshots. The v1 exit
+criterion (two weeks of real use, slice 7) has not started. See
+[`HANDOFF.md`](HANDOFF.md) for the evidence and the known gaps.
 
 ## Contract documents
 
@@ -17,6 +20,8 @@ separate delivery slices; the foundation is not yet a goal-execution product.
 - [Operations and recovery runbook](OPERATIONS.md)
 - [Repository onboarding evidence](ONBOARDING.md)
 - [Host bridge and MCP tools](HOST_BRIDGE.md)
+- [Console and Jarvis](CONSOLE.md)
+- [Implementation handoff and evidence](HANDOFF.md)
 - [Agent operating instructions](AGENT_INSTRUCTIONS.md)
 - [Decision record](DECISIONS.md)
 

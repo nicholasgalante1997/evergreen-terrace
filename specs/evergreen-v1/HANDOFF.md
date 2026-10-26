@@ -4,12 +4,21 @@
 
 ## Current status
 
-The repository contains an additive v1 factory foundation. It is **not yet a
-usable goal-execution product**. The control plane, host bridge, worktrees,
-decision cards, ACP execution, the durable lease-based worker scheduler, the
-local validation/integration train with selection and a host-verified
-integrator agent, and the decision-gated GitHub handoff are implemented and have
-run live against Compose. The mayor, console, and Jarvis remain incomplete.
+Every v1 delivery slice except dogfooding is implemented and has run live
+against Compose with real Claude ACP sessions:
+
+- control plane, host bridge, worktrees, and decision cards;
+- repository onboarding (cited discovery, a host-composed policy, one approval
+  packet) and the first-goal gate;
+- the mayor (bounded contract, scope-claimed tasks, dependency graph, worker
+  briefs) and learned-preference promotion;
+- the lease-based scheduler, the validation and integration train with
+  scope-claim enforcement and the integrator agent, and the GitHub handoff;
+- the console and Jarvis;
+- local recovery snapshots.
+
+What remains is the v1 exit criterion: two weeks of real use across three to
+four workspaces (see "Remaining work").
 
 The working tree is intentionally broad and dirty. Do not reset, checkout,
 remove worktrees, delete Docker volumes, or clean `/tmp`/factory artifacts.
@@ -133,30 +142,29 @@ The following are settled product decisions, not open design questions:
 
 ## Explicitly incomplete behavior and hazards
 
+- The goal aggregate has only `goal.submitted`: its `state` stays `submitted`
+  while plans, workers, integrations, and handoffs progress (Jarvis noticed
+  this live). Progress lives on those aggregates.
+- Cross-goal ordering is recorded, not enforced: overlapping claims between
+  active goals appear on the plan card, and `integrateAfterGoalIds` is
+  recorded, but the per-repository train still integrates each goal
+  separately.
+- The integrator resolves conflicts, but there is no hunk-level selection and
+  no clean replacement implementation, and `validation_failed` has no repair
+  path: rework means a new goal or attempt.
+- Jarvis has no temporary investigation workspaces (spec: a static panel and
+  data-source registry). It answers in its panel only.
+- The console is not in Compose: it runs natively beside the bridge (see
+  `OPERATIONS.md`).
 - The schedule is implicit: it is the goal's briefed `assigned` workers, not a
   separate schedule aggregate. Per-schedule concurrency is passed at start time
   and is not persisted, so `evergreen.schedule.resume` takes it again.
 - Legacy `running` workers with no lease (the pre-scheduler fixtures) still
   cannot be proven alive. They are reported `blocked` and are never
   auto-reconciled.
-- The scheduler slice has not yet run against the live Compose stack (see
-  "Operational note"). It was verified against a disposable PostgreSQL and a
-  projection replay.
-- The integration train merges whole worker branches. It does not yet select
-  individual commits, resolve conflicts, or produce a clean replacement
-  implementation (the integrator-agent role). A `conflicted` attempt needs
-  rework and a new attempt.
 - The GitHub handoff pushes, opens or reuses the goal PR, and comments on a
   superseded PR. It does not request reviews, respond to review comments, or
   track PR state after creation; those require further governed capabilities.
-- Handoff has not run against real GitHub. It was verified with real Git
-  pushes to a local bare remote and a fake `GitHubPort`; `GitHubCli` itself
-  is untested against `gh`.
-- Validation and integration have not yet run against the live Compose stack or
-  on this repository's own goals. They were verified with real Git worktrees,
-  real Bubblewrap, a disposable PostgreSQL, and a projection replay.
-- The console, live event service, `/api/ai`, Jarvis, learning/profile store,
-  snapshots, and onboarding discovery packet are specified but not implemented.
 
 ## Contract-level implementation inventory
 
@@ -305,23 +313,28 @@ adapters, or `gh`.
 
 | Tool | Implemented behavior | Missing behavior |
 | --- | --- | --- |
-| `evergreen.workspace.status` | Reads local Git/project state. | Onboarding evidence packet. |
+| `evergreen.workspace.status` | Reads local Git/project state (credentials stripped from the remote URL). | None for v1. |
 | `evergreen.workspace.sync` | Explicit fetch/prune and GitHub metadata refresh. | Durable sync event/projection. |
-| `evergreen.goal.submit` | Validates policy/local base and submits goal. | Mayor-created goal contract. |
-| `evergreen.decision.request` | Creates durable card. | Console decision UI. |
+| `evergreen.goal.submit` | First-goal gate (policy committed at the base, unchanged, remote matches), then submits the durable goal contract. | Goal-state progression after submission. |
+| `evergreen.decision.request` | Creates durable card. | None for v1. |
 | `evergreen.decision.resolve` | Resolves durable card. | Action continuation ledger. |
 | `evergreen.worktree.prepare` | Creates factory worktree/manifest. | Worktree-created event. |
-| `evergreen.worker.prepare` | Creates worktree and durable assignment. | Durable worker brief. |
+| `evergreen.worker.prepare` | Creates worktree and durable assignment. | None for v1 (the mayor launches planned workers). |
 | `evergreen.worker.run` | Records a brief; runs one worker under a lease. | None for this slice. |
 | `evergreen.worker_pool.run` | Records briefs; starts a background lease-based schedule. | Persisted per-schedule concurrency. |
-| `evergreen.schedule.status` | Goal workers with state, brief digest, and lease. | Console rendering. |
+| `evergreen.schedule.status` | Goal workers with state, brief digest, and lease. | None for v1. |
 | `evergreen.schedule.resume` | Reconciles expired leases and continues a goal. | Automatic resume on bridge start. |
-| `evergreen.validation.run` | Captures and validates one completed worker's commit. | Console rendering. |
-| `evergreen.integration.run` | Per-goal integration train with conflict/overlap/diff evidence. | Commit selection, conflict resolution, PR handoff. |
-| `evergreen.integration.status` | Goal integration attempts and validation records. | Console rendering. |
-| `evergreen.handoff.request` | Plans push + PR and creates the decision card. | Console decision UI. |
+| `evergreen.validation.run` | Captures and validates one completed worker's commit. | None for v1. |
+| `evergreen.integration.run` | Per-goal train with conflict/overlap/diff evidence, exclusions, and scope-claim enforcement. | Hunk selection, clean replacement, enforced cross-goal order. |
+| `evergreen.integration.status` | Goal integration attempts and validation records. | None for v1. |
+| `evergreen.handoff.request` | Plans push + PR and creates the decision card. | None for v1. |
 | `evergreen.handoff.execute` | Executes the approved plan with reconciliation. | Review requests and PR-state tracking. |
-| `evergreen.handoff.status` | Goal handoffs with plan, result, and exact body. | Console rendering. |
+| `evergreen.handoff.status` | Goal handoffs with plan, result, and exact body. | None for v1. |
+| `evergreen.integration.resolve` | Re-runs a conflicted attempt with the host-verified integrator agent. | Clean replacement implementation. |
+| `evergreen.onboarding.discover` / `.apply` / `.status` | Cited read-only discovery, host-composed policy, one card; factory-branch commit. | None for v1. |
+| `evergreen.plan.draft` / `.launch` / `.status` | Mayor plan with scope claims and graph; gated, idempotent launch. | Enforced cross-goal integration order. |
+| `evergreen.preference.propose` / `.list` | Conservative promotion rules; material changes are cards. | Automatic proposal from observed behavior. |
+| `evergreen.jarvis.ask` | Cited, read-only answers with schema-checked proposals. | Investigation workspaces. |
 
 ## ACP sandbox details
 
@@ -695,18 +708,78 @@ Then the integrator-resolved, validated attempt of goal
 second handoff for the same goal. A re-run of a completed handoff returns its
 stored result without contacting GitHub.
 
-## Subsequent slices, in order
+### Mayor, onboarding, console, Jarvis, and snapshots (completed, 2026-10-26)
 
-1. **Mayor and onboarding**: discovery pool, approval packet, bounded goal
-   contracts, scope claims, dependency graph, worker briefs, and learning
-   promotion rules.
-2. **Console/read model**: integration dependency graph, decisions, workers,
-   evidence, validation, and freshness. Browser stays read-only against the
-   read API; server-side console is the MCP consumer.
-3. **Jarvis**: separately configurable, read-only technical console agent with
-   explicit CTA/chat invocation and immutable safety boundary.
-4. **Recovery snapshots and dogfooding**: local snapshots before destructive
-   operations, then two weeks of real use across three to four workspaces.
+Contracts: `plan.updated`, `onboarding.updated`, and `preference.updated`
+(aggregate types `plan`, `onboarding`, `preference`), integration
+`scopeViolations`, and a durable goal contract (`references`, `constraints`).
+Command API: plan, onboarding, and preference aggregates, each creating its
+decision cards atomically; preferences settle inside the decision-resolution
+transaction. Projection and read API: `/v1/plans`, `/v1/onboardings`,
+`/v1/preferences`, `/v1/events`. Host bridge: read-only ACP sessions, structured
+output with repair turns, the mayor planner, onboarding, preferences, Jarvis,
+the first-goal gate, and scope enforcement (27 tools). New packages:
+`services/console` and `internal/recovery`. Details are in `HOST_BRIDGE.md`,
+`EVENTS_AND_API.md`, `CONSOLE.md`, and `OPERATIONS.md`.
+
+Live evidence against Compose. The sandbox clone lives in the session
+scratchpad; a reboot that cleared `/tmp` is why it was re-cloned from GitHub.
+A `pre-mayor` snapshot was taken before rebuilding.
+
+- **Onboarding, revision 1** (`86009760`): two discovery agents and the mayor,
+  all read-only, produced a packet with every check cited and four honest
+  ambiguities. It exposed a real bug: Git metadata was invisible inside the
+  sandbox for a repository under `/tmp` (agents saw `not a git repository`).
+  Fixed by binding the Git common directory read-only in every sandbox, with
+  a Bubblewrap regression test. The operator note requested a revision with
+  answers, which declined the packet without committing anything.
+- **Onboarding, revision 2** (`cbf759b4`): the note reached the agents
+  verbatim. With Git visible they found the earlier goal's unmerged
+  integration branch on origin and flagged deleting it as a `destructive` risk.
+  Approved and applied: `feature/et-onboarding-cbf759b4` at `4464cb8` changes
+  only `.et/config.toml`; the active checkout stayed on `main`, clean.
+  Validation failed as the engineer said it would (the notes did not exist
+  yet).
+- **Mayor** (goal `478366b2`, plan `6851587b`): `goal.submit` passed the
+  first-goal gate. The mayor returned two tasks (schema, then api), one file
+  claimed by each. It recognized that a dependent worker cannot see its
+  prerequisite's output and pinned the same Task definition word for word in
+  both briefs. The approved plan launched both workers in dependency order;
+  each raised one in-scope edit card, approved one at a time. Integration
+  attempt `1606f6ed` merged schema then api with no scope violations and
+  validated at `0757dbc`.
+- **Console**: served the live snapshot, rendered every goal (verified by
+  server-rendering each goal view from live data), streamed the watermark over
+  SSE, and refused a foreign Host (421) and a cross-site action (403).
+- **Jarvis**: answered "explain this goal" with claims citing real plan, worker,
+  decision, integration, and validation IDs, and with honest missing evidence
+  (it noticed the goal's `state` never advances). Its first proposal used the
+  wrong argument (`goalId` for `handoff.request`). Fixed: proposals are now
+  checked against each tool's real input schema, and the second answer
+  proposed `{ integrationId }`. Clicking it through `/api/actions` created a
+  handoff card, which was declined, and the console refused
+  `handoff.execute`.
+- **Snapshot** `20261026T154406Z-post-mayor-live` captured both databases, all
+  233 topic messages (equal to the end offsets), factory records, and two
+  `.et` histories, and passed `verify` (including `pg_restore --list`). The
+  first attempt failed because Kafka 4.3 prints a deprecation notice on stdout,
+  which made the count check report 234 of 233. It is marked `INCOMPLETE.txt`;
+  the fix counts only message lines.
+- **Operational finding**: rebuilding only command-api, projection, and
+  read-api left a stale outbox relay that rejected `onboarding.updated` and
+  stalled the ordered outbox. Nothing was lost, and a rebuilt relay drained it.
+  `factory:up` rebuilds everything, and `OPERATIONS.md` now says so.
+
+## Remaining work
+
+1. **Dogfooding (the v1 exit criterion):** two weeks of day-over-day use across
+   three to four real workspaces, measured against goal progress and release
+   cadence. This needs the operator; it cannot be simulated. Start by merging
+   this branch so Evergreen Terrace's own `.et/config.toml` reaches `main` and
+   passes the first-goal gate.
+2. Known gaps above: goal-state progression, enforced cross-goal train order,
+   `validation_failed` repair and clean replacement, Jarvis investigation
+   workspaces, and the supersede-comment path (still unexercised live).
 
 ## Quality conventions established in this branch
 
@@ -721,19 +794,20 @@ stored result without contacting GitHub.
 - Preserve strict Zod contracts and TypeScript types in dedicated type files.
 - No external MCP SDK/package may be added.
 
-## Verification last run
+## Verification last run (2026-10-26)
 
-- `bun run typecheck`: all 25 workspace packages passed.
-- `bun run build` passed for contracts, project-policy, command-api, projection,
-  read-api, host-bridge, and outbox-relay.
+- `bun run typecheck`: all 27 workspace packages passed.
+- Builds passed for contracts, command-api, projection, read-api, host-bridge,
+  and console. The legacy Tauri desktop build fails on this machine for lack
+  of GTK development packages, which is unrelated and unchanged.
 - Tests, all passing:
-  - contracts 15, mcp-core 1, project-policy 3, service-runtime 5,
-    outbox-relay 1;
-  - command-api 6 unit, plus 9 PostgreSQL integration tests that skip without
-    `ET_TEST_COMMAND_DATABASE_URL` (run twice against a disposable
-    `postgres:17-alpine`);
-  - host-bridge 30, including real Git, Bubblewrap, and bare-remote handoff
-    tests.
+  - contracts 35, mcp-core 1, project-policy 3, service-runtime 5,
+    outbox-relay 1, recovery 4, console 9;
+  - command-api 24, including 18 PostgreSQL integration tests run twice
+    against a disposable `postgres:17-alpine` (they skip without
+    `ET_TEST_COMMAND_DATABASE_URL`);
+  - host-bridge 145, including real Git, real Bubblewrap (a read-only mount and
+    read-only Git metadata), and bare-remote handoff tests.
 - Scans: no GitHub merge capability and no force-push flag in host-bridge
   source. The only `git merge` calls are local integration-worktree merges.
 - `.et/config.toml` parses under the extended strict schema.
@@ -746,6 +820,7 @@ stored result without contacting GitHub.
 The stack now runs this branch's images with the operator's `.env` (see "Live
 Compose exercise"). Do not invent or commit passwords. To change them, follow
 the rotation runbook in `OPERATIONS.md`. Never recreate the Postgres volume.
-Rebuild command-api, projection, and read-api together. A stale projection
-container rejects the new event types under strict envelope validation and
-stops consuming.
+Rebuild every contract consumer together (command-api, outbox-relay,
+projection, read-api); `bun run factory:up` does, after taking a `pre-up`
+snapshot. A stale relay or projection rejects new event types under strict
+envelope validation and stops.

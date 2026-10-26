@@ -52,6 +52,9 @@ offset. Duplicate delivery is expected and must be harmless.
 | `integration.updated` | Implemented | Integration-train attempt: `started` (sequence 1), then one terminal status (`validated`, `validation_failed`, `conflicted`, or `blocked`) with full completion evidence (sequence 2). |
 | `validation.completed` | Implemented | One immutable validation record (aggregate type `validation`) for a worker or integration commit. |
 | `handoff.updated` | Implemented | GitHub handoff lifecycle (aggregate type `handoff`): `requested`, then `executing`, then `completed` or `failed` (a failed handoff may re-enter `executing`), or `declined`. Carries the plan with the body digest, never the body text. |
+| `plan.updated` | Implemented | Mayor plan lifecycle (aggregate type `plan`): `drafting`, then `proposed` (with its `plan_approval` card), `needs_input` (with `ambiguity` cards), or `failed`; a proposed plan then becomes `launching` and `launched`, or `rejected`. Carries the proposal with brief digests, never brief text. |
+| `onboarding.updated` | Implemented | Repository onboarding (aggregate type `onboarding`): `discovering`, then `proposed` (packet plus `onboarding` card) or `failed`; then `applying` and `applied`, `failed` (retryable), or `declined`. Carries the full packet, including the exact policy text. |
+| `preference.updated` | Implemented | Learned preference (aggregate type `preference`): `promoted` directly, or `proposed` with a `preference` card and then `promoted`/`rejected`; a promotion moves the previous value to `superseded`. |
 | `workspace.synced` | Reserved | Explicit remote-ref and GitHub metadata refresh. |
 
 Reserved names are not a claim that their payload contracts or handlers exist.
@@ -245,6 +248,39 @@ The command API also checks that:
 | `POST /v1/handoffs/:handoffId/complete` | `{ status: "completed", result, detail }` or `{ status: "failed", detail }`, accepted only while `executing`. `result.pushedSha` must equal the approved head. |
 | `GET /v1/handoffs/:handoffId` and `GET /v1/goals/:goalId/handoffs` | Return the handoff, including the exact body. |
 
+### Mayor plans
+
+| Route | Behavior |
+| --- | --- |
+| `POST /v1/plans` | Starts a draft from `{ goalId, idempotencyKey, mayor, revisionOf, feedback }`. `revisionOf` must name the goal's latest plan (or be `null` for the first). Refused while the latest plan is drafting, launching/launched, awaiting its approval card, approved, or has unanswered question cards. |
+| `POST /v1/plans/:planId/draft/complete` | `{ status: "proposed", proposal, overlaps, flaggedRisks }` or `{ status: "failed", detail }`. A proposal with questions creates `ambiguity` cards (`needs_input`); otherwise one `plan_approval` card (`approve`/`revise`/`reject`). `integrateAfterGoalIds` must name other goals of the project. |
+| `POST /v1/plans/:planId/launch/begin` | Refused while the card is unresolved. `approve` moves to `launching`; any other resolution moves to `rejected`, keeping a revision note in `detail`. Re-entry while `launching` returns `resumed: true`. |
+| `POST /v1/plans/:planId/launch/complete` | `{ workers: [{ taskKey, workerId }] }`: exactly one worker of the same goal per planned task. |
+| `GET /v1/plans/:planId`, `GET /v1/goals/:goalId/plans`, `GET /v1/plans?projectId=&active=true` | Full plans, including brief text. The active list is the project's proposed or launched plans whose goal has no completed handoff (the scope claims overlap checks use). |
+
+### Repository onboarding
+
+| Route | Behavior |
+| --- | --- |
+| `POST /v1/onboardings` | Starts discovery from `{ projectId, idempotencyKey, discovery, revisionOf, feedback }`; one onboarding per project runs at a time and `revisionOf` must name the latest. |
+| `POST /v1/onboardings/:onboardingId/discovery/complete` | `{ status: "proposed", packet }` (the packet's project and base must match discovery, and `configSha256` must match `configToml`) creates the `onboarding` card; or `{ status: "failed", detail }`. |
+| `POST /v1/onboardings/:onboardingId/apply/begin` | Refused while the card is unresolved; `approve` moves to `applying`, anything else to `declined`. A `failed` apply may re-enter `applying`. |
+| `POST /v1/onboardings/:onboardingId/apply/complete` | `{ status: "applied", result, detail }` or `{ status: "failed", detail }`. |
+| `GET /v1/onboardings/:onboardingId`, `GET /v1/onboardings?projectId=` | Full onboarding records with packets. |
+
+### Learned preferences
+
+| Route | Behavior |
+| --- | --- |
+| `POST /v1/preferences` | Proposes `{ scope, projectId, key, category, value, evidence, rationale, idempotencyKey }`. Returns `route: "automatic"` (promoted) or `"decision"` (a `preference` card; resolving the card settles the preference in the same transaction). |
+| `GET /v1/preferences?projectId=&promoted=true` | Global plus project preferences; `promoted=true` returns only those in effect. |
+
+### Goal contract
+
+`POST /v1/goals` now stores `references` and `constraints`, and
+`GET /v1/goals/:goalId` returns them with the description: the durable goal
+contract the mayor plans from.
+
 ### `GET /v1/goals/:goalId/workers`
 
 Returns full command-side worker records for one goal in assignment order,
@@ -281,6 +317,19 @@ Return projected validation records, integration attempts with completion
 evidence, and handoffs (plan, status, result; never the body) for console
 review. Like every read endpoint they are current only
 through the projection watermark.
+
+### `GET /v1/plans`, `GET /v1/onboardings`, and `GET /v1/preferences`
+
+Projected plan (`?projectId=` or `?goalId=`), onboarding (`?projectId=`), and
+preference (`?projectId=`; global ones are always included) states: the latest
+event payload of each aggregate, plus `lastEventId` and `updatedAt`. Plans carry
+brief digests, not brief text.
+
+### `GET /v1/events?limit=<1-200>`
+
+The most recent events, newest first, as envelope metadata only (type,
+aggregate, sequence, actor, timestamps). Payloads are read through their
+aggregate's endpoint. The console's event stream and Jarvis's evidence use it.
 
 ### `GET /v1/projection/freshness`
 
