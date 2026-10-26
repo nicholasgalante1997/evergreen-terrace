@@ -80,6 +80,7 @@ export {
   integrationCompletionSchema,
   integrationOverlapSchema,
   integrationResolutionSchema,
+  integrationScopeViolationSchema,
   integrationSelectionSchema,
   integrationSourceSchema,
   integrationStartSchema,
@@ -95,6 +96,7 @@ export type {
   IntegrationCompletionInput,
   IntegrationOverlap,
   IntegrationResolution,
+  IntegrationScopeViolation,
   IntegrationSelection,
   IntegrationSource,
   IntegrationStart,
@@ -127,4 +129,103 @@ export type {
   HandoffUpdatedEventInput,
   HandoffUpdatedPayload
 } from "./handoff-events.types"
+export {
+  createPlanUpdatedEvent,
+  mayorPlanSchema,
+  mayorTaskSchema,
+  planDraftCompletionSchema,
+  planDraftStartSchema,
+  planLaunchCompletionSchema,
+  planMayorSessionSchema,
+  planOverlapSchema,
+  planProposalSummarySchema,
+  planQuestionSchema,
+  planRiskSchema,
+  planStatusSchema,
+  planTaskKeySchema,
+  planTaskOrder,
+  planTaskSummarySchema,
+  planUpdatedPayloadSchema,
+  reservedPlanRoles,
+  riskCategorySchema,
+  scopePatternSchema
+} from "./plan-events"
+export type {
+  MayorPlan,
+  MayorTask,
+  PlanDraftCompletion,
+  PlanDraftCompletionInput,
+  PlanDraftStart,
+  PlanDraftStartInput,
+  PlanLaunchCompletion,
+  PlanMayorSession,
+  PlanOverlap,
+  PlanProposalSummary,
+  PlanQuestion,
+  PlanRisk,
+  PlanStatus,
+  PlanTaskSummary,
+  PlanUpdatedEventInput,
+  PlanUpdatedPayload,
+  RiskCategory
+} from "./plan-events.types"
+export {
+  createOnboardingUpdatedEvent,
+  discoveryAreaSchema,
+  discoveryCitationSchema,
+  discoveryFindingSchema,
+  discoveryReportSchema,
+  onboardingApplyCompletionSchema,
+  onboardingDiscoveryCompletionSchema,
+  onboardingDiscoverySessionSchema,
+  onboardingFactsSchema,
+  onboardingPacketSchema,
+  onboardingProposalSchema,
+  onboardingResultSchema,
+  onboardingStartSchema,
+  onboardingStatusSchema,
+  onboardingUpdatedPayloadSchema,
+  verifiedDiscoveryReportSchema
+} from "./onboarding-events"
+export type {
+  DiscoveryArea,
+  DiscoveryCitation,
+  DiscoveryFinding,
+  DiscoveryReport,
+  OnboardingApplyCompletion,
+  OnboardingApplyCompletionInput,
+  OnboardingDiscoveryCompletion,
+  OnboardingDiscoveryCompletionInput,
+  OnboardingDiscoverySession,
+  OnboardingFacts,
+  OnboardingPacket,
+  OnboardingProposal,
+  OnboardingResult,
+  OnboardingStart,
+  OnboardingStartInput,
+  OnboardingStatus,
+  OnboardingUpdatedEventInput,
+  OnboardingUpdatedPayload,
+  VerifiedDiscoveryReport
+} from "./onboarding-events.types"
+export {
+  automaticPromotionEvidence,
+  createPreferenceUpdatedEvent,
+  lowImpactPreferenceCategories,
+  policyPreferenceKeyPrefixes,
+  preferenceCategorySchema,
+  preferenceKeySchema,
+  preferencePromotionRoute,
+  preferenceProposalSchema,
+  preferenceStatusSchema,
+  preferenceUpdatedPayloadSchema
+} from "./preference-events"
+export type {
+  PreferenceCategory,
+  PreferencePromotionRoute,
+  PreferenceProposal,
+  PreferenceStatus,
+  PreferenceUpdatedEventInput,
+  PreferenceUpdatedPayload
+} from "./preference-events.types"
 /** @module Public event-contract API. */

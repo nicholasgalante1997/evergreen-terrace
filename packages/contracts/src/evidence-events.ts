@@ -120,6 +120,16 @@ export const integrationOverlapSchema = z
   })
   .strict()
 
+/** Files a planned worker changed outside its approved scope claim. */
+export const integrationScopeViolationSchema = z
+  .object({
+    paths: z.array(repositoryPathSchema).min(1).max(5_000),
+    planId: z.string().uuid(),
+    taskKey: z.string().regex(/^[a-z][a-z0-9-]{0,31}$/),
+    workerId: z.string().uuid()
+  })
+  .strict()
+
 export const integrationTerminalStatusSchema = z.enum(["validated", "validation_failed", "conflicted", "blocked"])
 
 export const integrationCompletionSchema = z
@@ -148,6 +158,7 @@ export const integrationCompletionSchema = z
     mergeOrder: z.array(z.string().uuid()).max(16),
     overlaps: z.array(integrationOverlapSchema).max(1_000),
     resolutions: z.array(integrationResolutionSchema).max(8).default([]),
+    scopeViolations: z.array(integrationScopeViolationSchema).max(16).default([]),
     selection: integrationSelectionSchema.nullable().default(null),
     sources: z.array(integrationSourceSchema).max(16),
     status: integrationTerminalStatusSchema,

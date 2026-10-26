@@ -33,6 +33,9 @@ export const eventTypeSchema = z.enum([
   "integration.updated",
   "validation.completed",
   "handoff.updated",
+  "plan.updated",
+  "onboarding.updated",
+  "preference.updated",
   "workspace.synced"
 ])
 
@@ -45,7 +48,18 @@ export const actorSchema = z
 
 export const aggregateSchema = z
   .object({
-    type: z.enum(["goal", "decision", "worker", "workspace", "integration", "validation", "handoff"]),
+    type: z.enum([
+      "goal",
+      "decision",
+      "worker",
+      "workspace",
+      "integration",
+      "validation",
+      "handoff",
+      "plan",
+      "onboarding",
+      "preference"
+    ]),
     id: z.string().uuid(),
     sequence: z.number().int().positive()
   })
@@ -300,7 +314,9 @@ export const workerLeaseAcquiredPayloadSchema = z
 export const workerLeaseRenewedPayloadSchema = workerLeaseAcquiredPayloadSchema
 
 export const workerLeaseReleasedPayloadSchema = z
-  .object({ worker: z.object({ id: z.string().uuid(), lease: z.object({ owner: schedulerIdSchema }).strict() }).strict() })
+  .object({
+    worker: z.object({ id: z.string().uuid(), lease: z.object({ owner: schedulerIdSchema }).strict() }).strict()
+  })
   .strict()
 
 /**

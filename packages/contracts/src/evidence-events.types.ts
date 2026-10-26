@@ -6,6 +6,7 @@ import type {
   integrationCompletionSchema,
   integrationOverlapSchema,
   integrationResolutionSchema,
+  integrationScopeViolationSchema,
   integrationSelectionSchema,
   integrationSourceSchema,
   integrationStartSchema,
@@ -25,6 +26,7 @@ export type IntegrationStart = z.infer<typeof integrationStartSchema>
 export type IntegrationSource = z.infer<typeof integrationSourceSchema>
 export type IntegrationOverlap = z.infer<typeof integrationOverlapSchema>
 export type IntegrationResolution = z.infer<typeof integrationResolutionSchema>
+export type IntegrationScopeViolation = z.infer<typeof integrationScopeViolationSchema>
 export type IntegrationSelection = z.infer<typeof integrationSelectionSchema>
 export type IntegrationTerminalStatus = z.infer<typeof integrationTerminalStatusSchema>
 export type IntegrationCompletion = z.infer<typeof integrationCompletionSchema>

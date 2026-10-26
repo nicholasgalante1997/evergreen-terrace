@@ -44,6 +44,7 @@ const completion = (overrides: Partial<IntegrationCompletion>): IntegrationCompl
   mergeOrder: [],
   overlaps: [],
   resolutions: [],
+  scopeViolations: [],
   selection: null,
   sources: [],
   status: "blocked",
@@ -77,7 +78,8 @@ describe("integration evidence", () => {
   test("ties validation and conflict evidence to terminal status", () => {
     expect(integrationCompletionSchema.safeParse(completion({ status: "validated" })).success).toBe(false)
     expect(
-      integrationCompletionSchema.safeParse(completion({ status: "validated", validationId: crypto.randomUUID() })).success
+      integrationCompletionSchema.safeParse(completion({ status: "validated", validationId: crypto.randomUUID() }))
+        .success
     ).toBe(true)
     expect(integrationCompletionSchema.safeParse(completion({ status: "conflicted" })).success).toBe(false)
     expect(
@@ -140,14 +142,20 @@ describe("integrator evidence", () => {
       }
     }
     const { resolutions: _r, selection: _s, ...oldCompletion } = legacy.integration.completion as Record<string, unknown>
-    const parsed = integrationUpdatedPayloadSchema.parse({ integration: { ...legacy.integration, completion: oldCompletion } })
+    const parsed = integrationUpdatedPayloadSchema.parse({
+      integration: { ...legacy.integration, completion: oldCompletion }
+    })
     expect(parsed.integration.resolvesIntegrationId).toBeNull()
     expect("completion" in parsed.integration && parsed.integration.completion.resolutions).toEqual([])
     expect("completion" in parsed.integration && parsed.integration.completion.selection).toBeNull()
   })
 
   test("a selection must explain itself and a resolution must name its paths", () => {
-    expect(integrationCompletionSchema.safeParse(completion({ selection: { excludedWorkerIds: [crypto.randomUUID()], rationale: "" } })).success).toBe(false)
+    expect(
+      integrationCompletionSchema.safeParse(
+        completion({ selection: { excludedWorkerIds: [crypto.randomUUID()], rationale: "" } })
+      ).success
+    ).toBe(false)
     expect(
       integrationCompletionSchema.safeParse(
         completion({
