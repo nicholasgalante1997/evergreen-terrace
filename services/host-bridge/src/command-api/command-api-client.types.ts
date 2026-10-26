@@ -1,6 +1,20 @@
 /** @module Command API client result contracts. */
 
-import type { HandoffPlan, HandoffResult, HandoffStatus, IntegrationCompletion } from "@evergreen-terrace/contracts"
+import type {
+  HandoffPlan,
+  HandoffResult,
+  HandoffStatus,
+  IntegrationCompletion,
+  OnboardingStatus,
+  PlanStatus,
+  PreferenceStatus
+} from "@evergreen-terrace/contracts"
+import type { z } from "zod"
+import type {
+  commandOnboardingSnapshotSchema,
+  commandPlanSnapshotSchema,
+  commandPreferenceSnapshotSchema
+} from "./command-snapshots"
 
 export interface CommandGoalResult {
   created: boolean
@@ -38,16 +52,63 @@ export interface CommandWorkerStateChangeResult {
 
 export interface CommandDecisionSnapshot {
   id: string
+  options: Array<{ id: string; label: string }>
   resolution: { note: string; selectedOptionId: string | null; status: "approved" | "rejected" } | null
   status: "requested" | "approved" | "rejected"
+  title: string
 }
 
 export interface CommandGoalSnapshot {
   baseRef: string
   baseSha: string
+  /** The goal contract the mayor plans from; empty for an older goal without stored detail. */
+  constraints: string[]
+  description: string
   id: string
+  priorityClass: string
   projectId: string
+  references: string[]
   title: string
+}
+
+export type CommandPlanSnapshot = z.infer<typeof commandPlanSnapshotSchema>
+export type CommandOnboardingSnapshot = z.infer<typeof commandOnboardingSnapshotSchema>
+export type CommandPreferenceSnapshot = z.infer<typeof commandPreferenceSnapshotSchema>
+
+export interface CommandPlanResult {
+  created: boolean
+  decisionId?: string
+  planId: string
+  revision: number
+  status: PlanStatus
+}
+
+export interface CommandPlanBeginLaunchResult {
+  planId: string
+  resumed: boolean
+  status: PlanStatus
+}
+
+export interface CommandOnboardingResult {
+  created: boolean
+  decisionId?: string
+  onboardingId: string
+  revision: number
+  status: OnboardingStatus
+}
+
+export interface CommandOnboardingBeginApplyResult {
+  onboardingId: string
+  resumed: boolean
+  status: OnboardingStatus
+}
+
+export interface CommandPreferenceResult {
+  created: boolean
+  decisionId: string | null
+  preferenceId: string
+  route: "automatic" | "decision"
+  status: PreferenceStatus
 }
 
 export interface CommandIntegrationSnapshot {
@@ -138,6 +199,7 @@ export interface CommandWorkerSnapshot {
   dependsOnWorkerIds: string[]
   goalId: string
   id: string
+  idempotencyKey: string
   leaseExpiresAt: string | null
   leaseOwner: string | null
   projectId: string

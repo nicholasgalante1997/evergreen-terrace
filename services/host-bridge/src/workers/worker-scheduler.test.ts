@@ -18,6 +18,7 @@ const snapshot = (id: string, dependsOnWorkerIds: string[] = []): CommandWorkerS
   dependsOnWorkerIds,
   goalId,
   id,
+  idempotencyKey: `worker-${id}`,
   leaseExpiresAt: null,
   leaseOwner: null,
   projectId: "github.com/example/evergreen",
@@ -116,7 +117,9 @@ class FakeCommandApi implements WorkerSchedulerCommandPort {
   }
 
   async listGoalWorkers(requestedGoalId: string) {
-    return [...this.workers.values()].filter((worker) => worker.goalId === requestedGoalId).map((worker) => ({ ...worker }))
+    return [...this.workers.values()]
+      .filter((worker) => worker.goalId === requestedGoalId)
+      .map((worker) => ({ ...worker }))
   }
 
   async recordWorkerBrief(workerId: string, prompt: string) {
@@ -127,7 +130,10 @@ class FakeCommandApi implements WorkerSchedulerCommandPort {
 }
 
 /** Execution that mirrors WorkerExecutionService state changes against the fake. */
-const execution = (api: FakeCommandApi, onRun: (workerId: string, prompt: string) => Promise<void> = async () => undefined) => {
+const execution = (
+  api: FakeCommandApi,
+  onRun: (workerId: string, prompt: string) => Promise<void> = async () => undefined
+) => {
   const started: string[] = []
   const port: WorkerExecutionPort = {
     execute: async (input) => {

@@ -4,7 +4,7 @@ import { createHash } from "node:crypto"
 import { join } from "node:path"
 import type { WorktreePaths } from "./worktree.types"
 
-const projectSegment = (projectId: string): string => {
+export const projectSegment = (projectId: string): string => {
   const readable = projectId.replaceAll(/[^a-zA-Z0-9._-]/g, "_")
   const fingerprint = createHash("sha256").update(projectId).digest("hex").slice(0, 16)
   return `${readable}--${fingerprint}`

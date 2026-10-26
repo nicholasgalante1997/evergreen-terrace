@@ -10,6 +10,18 @@ import { stdinWritableStream } from "./stdin-writable-stream"
 import { workerSandboxCommand } from "./worker-sandbox"
 import type { AcpPermissionResolver, AcpWorkerResult, AcpWorkerRun } from "./acp-runner.types"
 
+/** Text of an `agent_message_chunk` notification; empty for every other update. */
+const agentText = (notification: unknown): string => {
+  const update = (
+    notification as { update?: { content?: { text?: unknown; type?: unknown }; sessionUpdate?: unknown } } | undefined
+  )?.update
+  return update?.sessionUpdate === "agent_message_chunk" &&
+    update.content?.type === "text" &&
+    typeof update.content.text === "string"
+    ? update.content.text
+    : ""
+}
+
 export class AcpWorkerRunner {
   constructor(private readonly permissions: AcpPermissionResolver) {}
 
@@ -27,7 +39,15 @@ export class AcpWorkerRunner {
     }
 
     const process = Bun.spawn(
-      await workerSandboxCommand(input.adapter, adapterCommand(input.adapter), input.worktreePath, input.artifactDirectory),
+      await workerSandboxCommand(
+        input.adapter,
+        adapterCommand(input.adapter),
+        input.worktreePath,
+        input.artifactDirectory,
+        {
+          readOnly: input.readOnly === true
+        }
+      ),
       {
         env: {
           ...planAuthEnvironment(),
@@ -67,7 +87,7 @@ export class AcpWorkerRunner {
           const resolution = await this.permissions.resolve(context.params)
           await record("permission.resolved", {
             ...acpPermissionResponseSummary(resolution.response),
-            ...(resolution.via === "automatic" ? { rule: resolution.rule } : { decisionId: resolution.decisionId }),
+            ...(resolution.via === "decision" ? { decisionId: resolution.decisionId } : { rule: resolution.rule }),
             granted: resolution.granted,
             via: resolution.via
           })
@@ -84,14 +104,26 @@ export class AcpWorkerRunner {
           await record("agent.initialized", initialized)
           return context.buildSession(input.worktreePath).withSession(async (session) => {
             await record("session.created", { sessionId: session.sessionId })
-            const promptResult = session.prompt(input.prompt)
+            let prompt: string | null = input.prompt
+            let turns = 0
             for (;;) {
-              const message = await session.nextUpdate()
-              if (message.kind === "stop") {
-                await promptResult
-                return { response: message.response, sessionId: session.sessionId }
+              const promptResult = session.prompt(prompt)
+              let turnText = ""
+              for (;;) {
+                const message = await session.nextUpdate()
+                if (message.kind === "stop") {
+                  await promptResult
+                  turns += 1
+                  prompt = input.continueWith === undefined ? null : await input.continueWith(turnText)
+                  if (prompt === null) {
+                    return { response: message.response, sessionId: session.sessionId, turns }
+                  }
+                  await record("session.follow_up", { length: prompt.length, turn: turns + 1 })
+                  break
+                }
+                turnText += agentText(message.notification)
+                await record("session.active_update", message.notification)
               }
-              await record("session.active_update", message.notification)
             }
           })
         })
@@ -108,6 +140,7 @@ export class AcpWorkerRunner {
         sessionId: result.sessionId,
         startedAt,
         stopReason: result.response.stopReason,
+        turns: result.turns,
         workerId: input.workerId
       }
       await writeFile(resultPath, `${JSON.stringify({ ok: true, result: workerResult }, null, 2)}\n`)

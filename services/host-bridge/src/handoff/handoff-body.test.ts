@@ -11,7 +11,13 @@ const body = renderHandoffBody({
   baseRef: "main",
   baseSha: "a".repeat(40),
   completion: {
-    aggregateDiff: { deletions: 1, filesChanged: 3, insertions: 9, path: `${home}/aggregate.diff`, sha256: "e".repeat(64) },
+    aggregateDiff: {
+      deletions: 1,
+      filesChanged: 3,
+      insertions: 9,
+      path: `${home}/aggregate.diff`,
+      sha256: "e".repeat(64)
+    },
     artifactDirectory: `${home}/artifacts`,
     branch: "feature/et-goal/integration-a2",
     conflict: null,
@@ -20,6 +26,7 @@ const body = renderHandoffBody({
     mergeOrder: [worker.b, worker.a],
     overlaps: [{ path: "src/shared.ts", workerIds: [worker.a, worker.b] }],
     resolutions: [],
+    scopeViolations: [],
     selection: null,
     sources: [
       {
@@ -115,6 +122,7 @@ test("discloses integrator resolutions and exclusions to reviewers, with rationa
       artifactDirectory: "/x",
       branch: "feature/et-goal/integration-a2",
       conflict: null,
+      scopeViolations: [],
       detail: "",
       headSha: "b".repeat(40),
       mergeOrder: [worker.a],
@@ -131,7 +139,16 @@ test("discloses integrator resolutions and exclusions to reviewers, with rationa
       ],
       selection: { excludedWorkerIds: [excluded], rationale: "Superseded approach." },
       sources: [
-        { branch: "b", captureCommitSha: null, changedFiles: ["README.md"], commitSha: "c".repeat(40), deletions: 0, insertions: 1, role: "status", workerId: worker.a }
+        {
+          branch: "b",
+          captureCommitSha: null,
+          changedFiles: ["README.md"],
+          commitSha: "c".repeat(40),
+          deletions: 0,
+          insertions: 1,
+          role: "status",
+          workerId: worker.a
+        }
       ],
       status: "validated",
       validationId: crypto.randomUUID(),
@@ -146,7 +163,17 @@ test("discloses integrator resolutions and exclusions to reviewers, with rationa
       goalId: crypto.randomUUID(),
       idempotencyKey: "v",
       projectId: "github.com/example/repository",
-      results: [{ command: "true", durationMs: 1, exitCode: 0, phase: "check", stderrPath: "/x/e", stdoutPath: "/x/o", timedOut: false }],
+      results: [
+        {
+          command: "true",
+          durationMs: 1,
+          exitCode: 0,
+          phase: "check",
+          stderrPath: "/x/e",
+          stdoutPath: "/x/o",
+          timedOut: false
+        }
+      ],
       startedAt: "2026-10-26T00:00:00.000Z",
       status: "passed",
       subject: { id: crypto.randomUUID(), type: "integration" }

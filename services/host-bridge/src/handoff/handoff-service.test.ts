@@ -5,7 +5,12 @@ import { createHash } from "node:crypto"
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import type { HandoffCompletion, HandoffRequest, IntegrationCompletion, ValidationRecord } from "@evergreen-terrace/contracts"
+import type {
+  HandoffCompletion,
+  HandoffRequest,
+  IntegrationCompletion,
+  ValidationRecord
+} from "@evergreen-terrace/contracts"
 import { loadProjectPolicy } from "@evergreen-terrace/project-policy"
 import type { CommandHandoffSnapshot, CommandIntegrationSnapshot } from "../command-api/command-api-client.types"
 import type { GitHubPort, PullRequestCreation, PullRequestReference } from "../github/github.types"
@@ -54,7 +59,10 @@ class FakeGitHub implements GitHubPort {
   async createPullRequest(_repository: string, input: PullRequestCreation) {
     this.created.push(input)
     this.bodies.push(await Bun.file(input.bodyPath).text())
-    const reference = { number: 10 + this.created.length, url: `https://github.com/example/handoff/pull/${10 + this.created.length}` }
+    const reference = {
+      number: 10 + this.created.length,
+      url: `https://github.com/example/handoff/pull/${10 + this.created.length}`
+    }
     this.open.set(input.head, reference)
     return reference
   }
@@ -86,7 +94,17 @@ class FakeHandoffApi implements HandoffCommandPort {
   }
 
   async getGoal(goalId: string) {
-    return { baseRef: "main", baseSha: this.integration.baseSha, id: goalId, projectId: "github.com/example/handoff", title: "Ship it" }
+    return {
+      baseRef: "main",
+      baseSha: this.integration.baseSha,
+      constraints: [],
+      description: "Ship it.",
+      id: goalId,
+      priorityClass: "p1",
+      projectId: "github.com/example/handoff",
+      references: [],
+      title: "Ship it"
+    }
   }
 
   async findValidation(): Promise<ValidationRecord> {
@@ -97,7 +115,17 @@ class FakeHandoffApi implements HandoffCommandPort {
       goalId: this.integration.goalId,
       idempotencyKey: "v",
       projectId: "github.com/example/handoff",
-      results: [{ command: "true", durationMs: 1, exitCode: 0, phase: "check", stderrPath: "/tmp/e", stdoutPath: "/tmp/o", timedOut: false }],
+      results: [
+        {
+          command: "true",
+          durationMs: 1,
+          exitCode: 0,
+          phase: "check",
+          stderrPath: "/tmp/e",
+          stdoutPath: "/tmp/o",
+          timedOut: false
+        }
+      ],
       startedAt: new Date().toISOString(),
       status: "passed",
       subject: { id: this.integration.id, type: "integration" }
@@ -198,11 +226,18 @@ describe("GitHub handoff", () => {
     await runProcess(["git", ...identity, "commit", "--quiet", "-m", "integrate"], worktree.worktreePath)
     const headSha = (await runProcess(["git", "rev-parse", "HEAD"], worktree.worktreePath)).stdout.trim()
     const completion: IntegrationCompletion = {
-      aggregateDiff: { deletions: 0, filesChanged: 1, insertions: 1, path: join(worktree.artifactDirectory, "aggregate.diff"), sha256: "a".repeat(64) },
+      aggregateDiff: {
+        deletions: 0,
+        filesChanged: 1,
+        insertions: 1,
+        path: join(worktree.artifactDirectory, "aggregate.diff"),
+        sha256: "a".repeat(64)
+      },
       artifactDirectory: worktree.artifactDirectory,
       branch: worktree.branch,
       conflict: null,
       detail: "",
+      scopeViolations: [],
       headSha,
       mergeOrder: [],
       overlaps: [],
@@ -245,7 +280,13 @@ describe("GitHub handoff", () => {
 
     const requested = await handoffs.request(integration.id)
     expect(requested.plan).toEqual(
-      expect.objectContaining({ baseRef: "main", branch: worktree.branch, headSha, remote: "origin", repository: "example/handoff" })
+      expect.objectContaining({
+        baseRef: "main",
+        branch: worktree.branch,
+        headSha,
+        remote: "origin",
+        repository: "example/handoff"
+      })
     )
     await expect(handoffs.execute(requested.handoffId)).rejects.toThrow("awaiting approval")
     expect(await remoteSha()).toBeNull()
@@ -284,7 +325,10 @@ describe("GitHub handoff", () => {
     const { handoffId } = await handoffs.request(integration.id)
     api.decision = "approved"
     await api.beginHandoff(handoffId)
-    await runProcess(["git", "push", "--quiet", remoteRoot, `${headSha}:refs/heads/${worktree.branch}`], worktree.worktreePath)
+    await runProcess(
+      ["git", "push", "--quiet", remoteRoot, `${headSha}:refs/heads/${worktree.branch}`],
+      worktree.worktreePath
+    )
     github.open.set(worktree.branch, { number: 4, url: "https://github.com/example/handoff/pull/4" })
 
     const executed = await handoffs.execute(handoffId)
@@ -324,13 +368,15 @@ describe("GitHub handoff", () => {
   test("refuses to request when the integration moved after validation or was not validated", async () => {
     const { integration, service, worktree } = await fixture("moved")
     const github = new FakeGitHub()
-    await expect(service(new FakeHandoffApi({ ...integration, status: "conflicted" }), github).request(integration.id)).rejects.toThrow(
-      "Only a validated integration"
-    )
+    await expect(
+      service(new FakeHandoffApi({ ...integration, status: "conflicted" }), github).request(integration.id)
+    ).rejects.toThrow("Only a validated integration")
     await Bun.write(join(worktree.worktreePath, "late.txt"), "late\n")
     await runProcess(["git", "add", "--all"], worktree.worktreePath)
     await runProcess(["git", ...identity, "commit", "--quiet", "-m", "late"], worktree.worktreePath)
-    await expect(service(new FakeHandoffApi(integration), github).request(integration.id)).rejects.toThrow("moved since validation")
+    await expect(service(new FakeHandoffApi(integration), github).request(integration.id)).rejects.toThrow(
+      "moved since validation"
+    )
   })
 
   test("comments once on the superseded goal PR, recognizing its own comment on retry", async () => {
@@ -376,6 +422,10 @@ describe("GitHub handoff", () => {
 
     expect(github.comments).toHaveLength(1)
     expect(github.comments[0]?.body).toContain("Superseded by https://github.com/example/handoff/pull/11")
-    expect(retried.status === "completed" && retried.result.reconciledSteps).toEqual(["push", "pull_request", "supersede_comment"])
+    expect(retried.status === "completed" && retried.result.reconciledSteps).toEqual([
+      "push",
+      "pull_request",
+      "supersede_comment"
+    ])
   })
 })

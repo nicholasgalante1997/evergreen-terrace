@@ -5,6 +5,7 @@ import { mkdir } from "node:fs/promises"
 import type {
   IntegrationCompletion,
   IntegrationResolution,
+  IntegrationScopeViolation,
   IntegrationSelection,
   IntegrationSource,
   WorkerAdapter
@@ -12,6 +13,7 @@ import type {
 import { integrationRole, integratorRole } from "@evergreen-terrace/project-policy"
 import type { CommandGoalSnapshot, CommandWorkerSnapshot } from "../command-api/command-api-client.types"
 import { FactoryGit } from "../git/factory-git"
+import { outsideClaim } from "../planning/scope-claims"
 import type { FactoryWorktreeRecord } from "../worktrees/worktree.types"
 import { changedFileOverlaps, mergeOrder } from "./integration-plan"
 import type {
@@ -47,6 +49,8 @@ interface AttemptPlan {
  *    rationale and may not strand a dependent worker.
  * 2. Records intent (`integration.updated: started`) before any Git side effect.
  * 3. Captures uncommitted worker output as a factory commit on each worker branch.
+ *    When the goal ran from an approved plan, a worker that changed files
+ *    outside its scope claim blocks the attempt before anything is merged.
  * 4. Creates a fresh integration worktree pinned to the goal's recorded base SHA.
  * 5. Merges sources in dependency order. On a conflict, a plain run aborts and
  *    records it. A resolve run leaves the merge open for the integrator agent
@@ -132,6 +136,7 @@ export class IntegrationTrain extends EventEmitter {
         mergeOrder: [],
         overlaps: [],
         resolutions: [],
+        scopeViolations: [],
         selection: plan.selection,
         sources: [],
         status: "blocked",
@@ -173,7 +178,10 @@ export class IntegrationTrain extends EventEmitter {
     return { excludedWorkerIds: [...excluded], rationale: rationale.trim() }
   }
 
-  private sourceWorkers(workers: readonly CommandWorkerSnapshot[], selection: IntegrationSelection | null): CommandWorkerSnapshot[] {
+  private sourceWorkers(
+    workers: readonly CommandWorkerSnapshot[],
+    selection: IntegrationSelection | null
+  ): CommandWorkerSnapshot[] {
     const excluded = new Set(selection?.excludedWorkerIds ?? [])
     const candidates = workers.filter((worker) => worker.role !== integratorRole && !excluded.has(worker.id))
     if (candidates.length === 0) {
@@ -194,24 +202,46 @@ export class IntegrationTrain extends EventEmitter {
     return completed
   }
 
-  private async compose(plan: AttemptPlan, integrationId: string, worktree: FactoryWorktreeRecord): Promise<IntegrationCompletion> {
+  private async compose(
+    plan: AttemptPlan,
+    integrationId: string,
+    worktree: FactoryWorktreeRecord
+  ): Promise<IntegrationCompletion> {
     const sources: IntegrationSource[] = []
     for (const worker of plan.sources) {
       sources.push(await this.captureSource(worker))
     }
     const order = mergeOrder(plan.sources)
     const resolutions: IntegrationResolution[] = []
+    const scopeViolations = await this.scopeViolations(plan.goal.id, sources)
     const evidence = {
       artifactDirectory: worktree.artifactDirectory,
       branch: worktree.branch,
       mergeOrder: order,
       overlaps: changedFileOverlaps(sources),
       resolutions,
+      scopeViolations,
       selection: plan.selection,
       sources,
       worktreePath: worktree.worktreePath
     }
     const git = new FactoryGit(worktree.worktreePath)
+    if (scopeViolations.length > 0) {
+      return {
+        ...evidence,
+        aggregateDiff: null,
+        conflict: null,
+        detail: `Blocked before merging: ${scopeViolations
+          .map(
+            (violation) =>
+              `${violation.taskKey} (${violation.workerId}) changed ${violation.paths.length} file(s) outside its scope claim`
+          )
+          .join("; ")}. Exclude the worker with a rationale, or rework it.`.slice(0, 8_000),
+        headSha: await git.head(),
+        status: "blocked",
+        validationId: null
+      }
+    }
     const merged: CommandWorkerSnapshot[] = []
     for (const workerId of order) {
       const source = sources.find((candidate) => candidate.workerId === workerId)
@@ -291,6 +321,24 @@ export class IntegrationTrain extends EventEmitter {
       status: validation.status === "passed" ? "validated" : "validation_failed",
       validationId: validation.validationId
     }
+  }
+
+  /** Workers that came from an approved plan must stay inside their claims; others carry no claim. */
+  private async scopeViolations(
+    goalId: string,
+    sources: readonly IntegrationSource[]
+  ): Promise<IntegrationScopeViolation[]> {
+    const claims = (await this.ports.plans?.launchedClaims(goalId)) ?? null
+    if (claims === null) {
+      return []
+    }
+    return sources.flatMap((source) => {
+      const claim = claims.workers.get(source.workerId)
+      const paths = claim === undefined ? [] : outsideClaim(source.changedFiles, claim.scope)
+      return claim === undefined || paths.length === 0
+        ? []
+        : [{ paths: paths.slice(0, 5_000), planId: claims.planId, taskKey: claim.taskKey, workerId: source.workerId }]
+    })
   }
 
   private async captureSource(worker: CommandWorkerSnapshot): Promise<IntegrationSource> {

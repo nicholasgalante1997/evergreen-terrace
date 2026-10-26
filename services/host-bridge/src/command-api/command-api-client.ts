@@ -12,6 +12,16 @@ import {
   handoffStatusSchema,
   integrationCompletionSchema,
   integrationStartSchema,
+  onboardingApplyCompletionSchema,
+  onboardingDiscoveryCompletionSchema,
+  onboardingStartSchema,
+  onboardingStatusSchema,
+  planDraftCompletionSchema,
+  planDraftStartSchema,
+  planLaunchCompletionSchema,
+  planStatusSchema,
+  preferenceProposalSchema,
+  preferenceStatusSchema,
   validationRecordSchema,
   workerAssignmentSchema,
   workerBriefSchema,
@@ -30,10 +40,22 @@ import type {
   HandoffRequest,
   IntegrationCompletionInput,
   IntegrationStartInput,
+  OnboardingApplyCompletionInput,
+  OnboardingDiscoveryCompletionInput,
+  OnboardingStartInput,
+  PlanDraftCompletionInput,
+  PlanDraftStartInput,
+  PlanLaunchCompletion,
+  PreferenceProposal,
   ValidationRecord,
   WorkerAssignment
 } from "@evergreen-terrace/contracts"
-import type { z } from "zod"
+import { z } from "zod"
+import {
+  commandOnboardingSnapshotSchema,
+  commandPlanSnapshotSchema,
+  commandPreferenceSnapshotSchema
+} from "./command-snapshots"
 import type {
   CommandDecisionRequestResult,
   CommandDecisionResolutionResult,
@@ -46,6 +68,14 @@ import type {
   CommandIntegrationCompletionResult,
   CommandIntegrationSnapshot,
   CommandIntegrationStartResult,
+  CommandOnboardingBeginApplyResult,
+  CommandOnboardingResult,
+  CommandOnboardingSnapshot,
+  CommandPlanBeginLaunchResult,
+  CommandPlanResult,
+  CommandPlanSnapshot,
+  CommandPreferenceResult,
+  CommandPreferenceSnapshot,
   CommandValidationResult,
   CommandWorkerAssignmentResult,
   CommandWorkerBrief,
@@ -139,12 +169,171 @@ export class CommandApiClient {
     ) {
       throw new Error("Command API returned an incomplete goal response")
     }
+    const strings = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : [])
     return {
       baseRef: payload.base_ref,
       baseSha: payload.base_sha.trim(),
+      constraints: strings(payload.constraints),
+      description: typeof payload.description === "string" ? payload.description : "",
       id: payload.id,
+      priorityClass: typeof payload.priority_class === "string" ? payload.priority_class : "",
       projectId: payload.project_id,
+      references: strings(payload.references),
       title: payload.title
+    }
+  }
+
+  async startPlanDraft(input: PlanDraftStartInput): Promise<CommandPlanResult> {
+    return this.planResult(await this.request("/v1/plans", "POST", planDraftStartSchema.parse(input), "plan draft"))
+  }
+
+  async completePlanDraft(planId: string, input: PlanDraftCompletionInput): Promise<CommandPlanResult> {
+    return this.planResult(
+      await this.request(
+        `/v1/plans/${planId}/draft/complete`,
+        "POST",
+        planDraftCompletionSchema.parse(input),
+        "plan draft completion"
+      )
+    )
+  }
+
+  async beginPlanLaunch(planId: string): Promise<CommandPlanBeginLaunchResult> {
+    const payload = await this.request(`/v1/plans/${planId}/launch/begin`, "POST", {}, "plan launch")
+    return { planId, resumed: payload.resumed === true, status: planStatusSchema.parse(payload.status) }
+  }
+
+  async completePlanLaunch(planId: string, input: PlanLaunchCompletion): Promise<CommandPlanResult> {
+    return this.planResult(
+      await this.request(
+        `/v1/plans/${planId}/launch/complete`,
+        "POST",
+        planLaunchCompletionSchema.parse(input),
+        "plan launch completion"
+      )
+    )
+  }
+
+  async getPlan(planId: string): Promise<CommandPlanSnapshot> {
+    return commandPlanSnapshotSchema.parse(await this.get(`/v1/plans/${planId}`, "plan"))
+  }
+
+  async listGoalPlans(goalId: string): Promise<CommandPlanSnapshot[]> {
+    return z.array(commandPlanSnapshotSchema).parse((await this.get(`/v1/goals/${goalId}/plans`, "goal plans")).plans)
+  }
+
+  async listActiveProjectPlans(projectId: string): Promise<CommandPlanSnapshot[]> {
+    const query = new URLSearchParams({ active: "true", projectId })
+    return z.array(commandPlanSnapshotSchema).parse((await this.get(`/v1/plans?${query}`, "active plans")).plans)
+  }
+
+  async startOnboarding(input: OnboardingStartInput): Promise<CommandOnboardingResult> {
+    return this.onboardingResult(
+      await this.request("/v1/onboardings", "POST", onboardingStartSchema.parse(input), "onboarding start")
+    )
+  }
+
+  async completeOnboardingDiscovery(
+    onboardingId: string,
+    input: OnboardingDiscoveryCompletionInput
+  ): Promise<CommandOnboardingResult> {
+    return this.onboardingResult(
+      await this.request(
+        `/v1/onboardings/${onboardingId}/discovery/complete`,
+        "POST",
+        onboardingDiscoveryCompletionSchema.parse(input),
+        "onboarding discovery completion"
+      )
+    )
+  }
+
+  async beginOnboardingApply(onboardingId: string): Promise<CommandOnboardingBeginApplyResult> {
+    const payload = await this.request(`/v1/onboardings/${onboardingId}/apply/begin`, "POST", {}, "onboarding apply")
+    return { onboardingId, resumed: payload.resumed === true, status: onboardingStatusSchema.parse(payload.status) }
+  }
+
+  async completeOnboardingApply(
+    onboardingId: string,
+    input: OnboardingApplyCompletionInput
+  ): Promise<CommandOnboardingResult> {
+    return this.onboardingResult(
+      await this.request(
+        `/v1/onboardings/${onboardingId}/apply/complete`,
+        "POST",
+        onboardingApplyCompletionSchema.parse(input),
+        "onboarding apply completion"
+      )
+    )
+  }
+
+  async getOnboarding(onboardingId: string): Promise<CommandOnboardingSnapshot> {
+    return commandOnboardingSnapshotSchema.parse(await this.get(`/v1/onboardings/${onboardingId}`, "onboarding"))
+  }
+
+  async listProjectOnboardings(projectId: string): Promise<CommandOnboardingSnapshot[]> {
+    const query = new URLSearchParams({ projectId })
+    return z
+      .array(commandOnboardingSnapshotSchema)
+      .parse((await this.get(`/v1/onboardings?${query}`, "onboardings")).onboardings)
+  }
+
+  async proposePreference(input: PreferenceProposal): Promise<CommandPreferenceResult> {
+    const payload = await this.request(
+      "/v1/preferences",
+      "POST",
+      preferenceProposalSchema.parse(input),
+      "preference proposal"
+    )
+    if (typeof payload.preferenceId !== "string" || typeof payload.created !== "boolean") {
+      throw new Error("Command API returned an incomplete preference response")
+    }
+    return {
+      created: payload.created,
+      decisionId: typeof payload.decisionId === "string" ? payload.decisionId : null,
+      preferenceId: payload.preferenceId,
+      route: payload.route === "automatic" ? "automatic" : "decision",
+      status: preferenceStatusSchema.parse(payload.status)
+    }
+  }
+
+  async listPreferences(projectId: string | null, promotedOnly: boolean): Promise<CommandPreferenceSnapshot[]> {
+    const query = new URLSearchParams({ ...(projectId === null ? {} : { projectId }), promoted: String(promotedOnly) })
+    return z
+      .array(commandPreferenceSnapshotSchema)
+      .parse((await this.get(`/v1/preferences?${query}`, "preferences")).preferences)
+  }
+
+  private planResult(payload: Record<string, unknown>): CommandPlanResult {
+    if (
+      typeof payload.planId !== "string" ||
+      typeof payload.created !== "boolean" ||
+      typeof payload.revision !== "number"
+    ) {
+      throw new Error("Command API returned an incomplete plan response")
+    }
+    return {
+      created: payload.created,
+      ...(typeof payload.decisionId === "string" ? { decisionId: payload.decisionId } : {}),
+      planId: payload.planId,
+      revision: payload.revision,
+      status: planStatusSchema.parse(payload.status)
+    }
+  }
+
+  private onboardingResult(payload: Record<string, unknown>): CommandOnboardingResult {
+    if (
+      typeof payload.onboardingId !== "string" ||
+      typeof payload.created !== "boolean" ||
+      typeof payload.revision !== "number"
+    ) {
+      throw new Error("Command API returned an incomplete onboarding response")
+    }
+    return {
+      created: payload.created,
+      ...(typeof payload.decisionId === "string" ? { decisionId: payload.decisionId } : {}),
+      onboardingId: payload.onboardingId,
+      revision: payload.revision,
+      status: onboardingStatusSchema.parse(payload.status)
     }
   }
 
@@ -178,7 +367,9 @@ export class CommandApiClient {
     const { validations } = await this.listGoalEvidence(goalId)
     const match = validations.find(
       (validation): validation is Record<string, unknown> =>
-        typeof validation === "object" && validation !== null && (validation as Record<string, unknown>).id === validationId
+        typeof validation === "object" &&
+        validation !== null &&
+        (validation as Record<string, unknown>).id === validationId
     )
     if (match === undefined) {
       throw new Error(`Validation ${validationId} not found for goal ${goalId}`)
@@ -189,7 +380,11 @@ export class CommandApiClient {
 
   async requestHandoff(input: HandoffRequest): Promise<CommandHandoffRequestResult> {
     const payload = await this.request("/v1/handoffs", "POST", handoffRequestSchema.parse(input), "handoff request")
-    if (typeof payload.handoffId !== "string" || typeof payload.decisionId !== "string" || typeof payload.created !== "boolean") {
+    if (
+      typeof payload.handoffId !== "string" ||
+      typeof payload.decisionId !== "string" ||
+      typeof payload.created !== "boolean"
+    ) {
       throw new Error("Command API returned an incomplete handoff request response")
     }
     return {
@@ -209,7 +404,12 @@ export class CommandApiClient {
   }
 
   async completeHandoff(handoffId: string, input: HandoffCompletion): Promise<void> {
-    await this.request(`/v1/handoffs/${handoffId}/complete`, "POST", handoffCompletionSchema.parse(input), "handoff completion")
+    await this.request(
+      `/v1/handoffs/${handoffId}/complete`,
+      "POST",
+      handoffCompletionSchema.parse(input),
+      "handoff completion"
+    )
   }
 
   async getHandoff(handoffId: string): Promise<CommandHandoffSnapshot> {
@@ -252,7 +452,12 @@ export class CommandApiClient {
   }
 
   async recordValidation(input: ValidationRecord): Promise<CommandValidationResult> {
-    const payload = await this.request("/v1/validations", "POST", validationRecordSchema.parse(input), "validation record")
+    const payload = await this.request(
+      "/v1/validations",
+      "POST",
+      validationRecordSchema.parse(input),
+      "validation record"
+    )
     if (
       typeof payload.validationId !== "string" ||
       typeof payload.created !== "boolean" ||
@@ -264,7 +469,12 @@ export class CommandApiClient {
   }
 
   async startIntegration(input: IntegrationStartInput): Promise<CommandIntegrationStartResult> {
-    const payload = await this.request("/v1/integrations", "POST", integrationStartSchema.parse(input), "integration start")
+    const payload = await this.request(
+      "/v1/integrations",
+      "POST",
+      integrationStartSchema.parse(input),
+      "integration start"
+    )
     if (
       typeof payload.integrationId !== "string" ||
       typeof payload.attempt !== "number" ||
@@ -273,10 +483,18 @@ export class CommandApiClient {
     ) {
       throw new Error("Command API returned an incomplete integration start response")
     }
-    return { attempt: payload.attempt, created: payload.created, integrationId: payload.integrationId, status: payload.status }
+    return {
+      attempt: payload.attempt,
+      created: payload.created,
+      integrationId: payload.integrationId,
+      status: payload.status
+    }
   }
 
-  async completeIntegration(integrationId: string, input: IntegrationCompletionInput): Promise<CommandIntegrationCompletionResult> {
+  async completeIntegration(
+    integrationId: string,
+    input: IntegrationCompletionInput
+  ): Promise<CommandIntegrationCompletionResult> {
     const payload = await this.request(
       `/v1/integrations/${integrationId}/complete`,
       "POST",
@@ -303,7 +521,11 @@ export class CommandApiClient {
   async recordWorkerBrief(workerId: string, prompt: string): Promise<CommandWorkerBriefResult> {
     const brief = workerBriefSchema.parse({ prompt })
     const payload = await this.request(`/v1/workers/${workerId}/brief`, "POST", brief, "worker brief")
-    if (typeof payload.briefSha256 !== "string" || typeof payload.eventId !== "string" || typeof payload.recorded !== "boolean") {
+    if (
+      typeof payload.briefSha256 !== "string" ||
+      typeof payload.eventId !== "string" ||
+      typeof payload.recorded !== "boolean"
+    ) {
       throw new Error("Command API returned an incomplete worker brief response")
     }
     return { briefSha256: payload.briefSha256, eventId: payload.eventId, recorded: payload.recorded, workerId }
@@ -324,11 +546,19 @@ export class CommandApiClient {
 
   async renewWorkerLease(workerId: string, schedulerId: string, ttlSeconds: number): Promise<CommandWorkerLeaseResult> {
     const lease = workerLeaseRenewSchema.parse({ schedulerId, ttlSeconds })
-    return this.leaseResult(await this.request(`/v1/workers/${workerId}/lease/renew`, "POST", lease, "worker lease renewal"), workerId)
+    return this.leaseResult(
+      await this.request(`/v1/workers/${workerId}/lease/renew`, "POST", lease, "worker lease renewal"),
+      workerId
+    )
   }
 
   async releaseWorkerLease(workerId: string, schedulerId: string): Promise<void> {
-    await this.request(`/v1/workers/${workerId}/lease/release`, "POST", workerLeaseReleaseSchema.parse({ schedulerId }), "worker lease release")
+    await this.request(
+      `/v1/workers/${workerId}/lease/release`,
+      "POST",
+      workerLeaseReleaseSchema.parse({ schedulerId }),
+      "worker lease release"
+    )
   }
 
   async reconcileWorkerLease(workerId: string, schedulerId: string): Promise<CommandWorkerLeaseReconcileResult> {
@@ -352,7 +582,10 @@ export class CommandApiClient {
     return payload.workers.map((worker: unknown) => this.workerSnapshot(worker))
   }
 
-  async changeWorkerState(workerId: string, input: z.input<typeof workerStateChangeSchema>): Promise<CommandWorkerStateChangeResult> {
+  async changeWorkerState(
+    workerId: string,
+    input: z.input<typeof workerStateChangeSchema>
+  ): Promise<CommandWorkerStateChangeResult> {
     const change = workerStateChangeSchema.parse(input)
     const payload = await this.request(`/v1/workers/${workerId}/state`, "POST", change, "worker state change")
     if (
@@ -378,6 +611,15 @@ export class CommandApiClient {
     }
     return {
       id: payload.id,
+      options: Array.isArray(payload.options)
+        ? payload.options.flatMap((option: unknown) => {
+            const value = option as Record<string, unknown>
+            return typeof value.id === "string" && typeof value.label === "string"
+              ? [{ id: value.id, label: value.label }]
+              : []
+          })
+        : [],
+      title: typeof payload.title === "string" ? payload.title : "",
       resolution: payload.resolution === null ? null : decisionResolutionSchema.parse(payload.resolution),
       status: decisionStatusSchema.parse(payload.status)
     }
@@ -388,7 +630,11 @@ export class CommandApiClient {
   }
 
   private leaseResult(payload: Record<string, unknown>, workerId: string): CommandWorkerLeaseResult {
-    if (typeof payload.leaseOwner !== "string" || typeof payload.leaseExpiresAt !== "string" || typeof payload.changed !== "boolean") {
+    if (
+      typeof payload.leaseOwner !== "string" ||
+      typeof payload.leaseExpiresAt !== "string" ||
+      typeof payload.changed !== "boolean"
+    ) {
       throw new Error("Command API returned an incomplete worker lease response")
     }
     return { changed: payload.changed, leaseExpiresAt: payload.leaseExpiresAt, leaseOwner: payload.leaseOwner, workerId }

@@ -12,7 +12,7 @@ import type {
   ValidationRecord
 } from "@evergreen-terrace/contracts"
 import { loadProjectPolicy } from "@evergreen-terrace/project-policy"
-import type { CommandWorkerSnapshot } from "../command-api/command-api-client.types"
+import type { CommandGoalSnapshot, CommandWorkerSnapshot } from "../command-api/command-api-client.types"
 import { FactoryGit } from "../git/factory-git"
 import { runProcess } from "../process/run-process"
 import { ValidationRunner } from "../validation/validation-runner"
@@ -20,6 +20,7 @@ import { ValidationService } from "../validation/validation-service"
 import { FactoryWorktreeManager } from "../worktrees/factory-worktree-manager"
 import { ConflictIntegrator } from "./conflict-integrator"
 import { IntegrationPreconditionError, IntegrationTrain } from "./integration-train"
+import type { IntegrationTrainPorts } from "./integration-train.types"
 
 const sandboxAvailable = Bun.spawnSync(["bwrap", "--ro-bind", "/", "/", "--unshare-net", "true"]).exitCode === 0
 
@@ -55,7 +56,7 @@ class FakeEvidenceApi {
   readonly validations = new Map<string, ValidationRecord>()
 
   constructor(
-    readonly goal: { baseRef: string; baseSha: string; id: string; projectId: string; title: string },
+    readonly goal: CommandGoalSnapshot,
     readonly workers: CommandWorkerSnapshot[]
   ) {}
 
@@ -126,7 +127,19 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     await runProcess(["git", "init", "--quiet", "--initial-branch=main"], projectRoot)
     await runProcess(["git", "add", "--all"], projectRoot)
     await runProcess(
-      ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "base"],
+      [
+        "git",
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "base"
+      ],
       projectRoot
     )
     const baseSha = (await runProcess(["git", "rev-parse", "HEAD"], projectRoot)).stdout.trim()
@@ -141,6 +154,7 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
         dependsOnWorkerIds,
         goalId,
         id: crypto.randomUUID(),
+        idempotencyKey: `worker-${role}`,
         leaseExpiresAt: null,
         leaseOwner: null,
         projectId: "github.com/example/train",
@@ -158,17 +172,33 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
       }
     }
 
-    const train = (api: FakeEvidenceApi, integrator?: ConflictIntegrator) =>
+    const train = (api: FakeEvidenceApi, integrator?: ConflictIntegrator, plans?: IntegrationTrainPorts["plans"]) =>
       new IntegrationTrain({
         commandApi: api,
         ...(integrator === undefined ? {} : { integrator }),
+        ...(plans === undefined ? {} : { plans }),
         validation: new ValidationService(api, new ValidationRunner(join(factoryRoot, "cache")), () =>
           loadProjectPolicy(projectRoot)
         ),
         worktrees
       })
 
-    return { baseSha, goal: { baseRef: "main", baseSha, id: goalId, projectId: "github.com/example/train", title: "Train fixture" }, train, worker }
+    return {
+      baseSha,
+      goal: {
+        baseRef: "main",
+        baseSha,
+        constraints: [],
+        description: "Train fixture.",
+        id: goalId,
+        priorityClass: "p1",
+        projectId: "github.com/example/train",
+        references: [],
+        title: "Train fixture"
+      },
+      train,
+      worker
+    }
   }
 
   const commit = async (worktreePath: string, path: string, content: string) => {
@@ -183,7 +213,7 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
   test("merges in dependency order, captures uncommitted output, and validates the composed head", async () => {
     const { baseSha, goal, train, worker } = await fixture("clean", [
       "grep -q alpha alpha.txt && grep -q beta beta.txt",
-      "touch \"$HOME/.et-validation-escape\" 2>/dev/null && exit 1 || exit 0"
+      'touch "$HOME/.et-validation-escape" 2>/dev/null && exit 1 || exit 0'
     ])
     const schema = await worker("schema")
     const api = await worker("api", [schema.id])
@@ -196,7 +226,9 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     expect(result.completion.status).toBe("validated")
     expect(result.completion.branch).toBe(`feature/et-${goal.id}/integration`)
     expect(result.completion.mergeOrder).toEqual([schema.id, api.id])
-    expect(result.completion.sources.find((source) => source.workerId === api.id)?.captureCommitSha).toMatch(/^[0-9a-f]{40}$/)
+    expect(result.completion.sources.find((source) => source.workerId === api.id)?.captureCommitSha).toMatch(
+      /^[0-9a-f]{40}$/
+    )
     expect(result.completion.sources.find((source) => source.workerId === schema.id)?.captureCommitSha).toBeNull()
     expect(result.completion.aggregateDiff).toEqual(expect.objectContaining({ filesChanged: 2, insertions: 2 }))
     expect(await Bun.file(result.completion.aggregateDiff?.path ?? "").text()).toContain("+beta")
@@ -239,6 +271,45 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     const [validation] = [...evidence.validations.values()]
     expect(validation?.status).toBe("failed")
     expect(validation?.results.map((entry) => entry.exitCode)).toEqual([3, 0])
+  })
+
+  test("blocks a planned worker that changed files outside its scope claim, before merging anything", async () => {
+    const { goal, train, worker } = await fixture("plan-scope", ["true"])
+    const api = await worker("api")
+    const docs = await worker("docs")
+    await commit(api.worktree.worktreePath, "api.txt", "api\n")
+    await commit(api.worktree.worktreePath, "shared.txt", "line one\nsneaky\n")
+    await commit(docs.worktree.worktreePath, "docs.md", "docs\n")
+    const evidence = new FakeEvidenceApi(goal, [api, docs])
+    const planId = crypto.randomUUID()
+    const plans = {
+      launchedClaims: async () => ({
+        planId,
+        workers: new Map([
+          [api.id, { scope: ["api.txt"], taskKey: "api" }],
+          [docs.id, { scope: ["docs.md"], taskKey: "docs" }]
+        ])
+      })
+    }
+
+    const result = await train(evidence, undefined, plans).run({ branchClass: "feature", goalId: goal.id })
+
+    expect(result.completion.status).toBe("blocked")
+    expect(result.completion.scopeViolations).toEqual([
+      { paths: ["shared.txt"], planId, taskKey: "api", workerId: api.id }
+    ])
+    expect(result.completion.detail).toContain("outside its scope claim")
+    expect(evidence.validations.size).toBe(0)
+    expect(await Bun.file(join(result.completion.worktreePath, "api.txt")).exists()).toBe(false)
+
+    const excluded = await train(evidence, undefined, plans).run({
+      branchClass: "feature",
+      excludeWorkerIds: [api.id],
+      goalId: goal.id,
+      selectionRationale: "api strayed outside its claim; integrate docs alone"
+    })
+    expect(excluded.completion.status).toBe("validated")
+    expect(excluded.completion.scopeViolations).toEqual([])
   })
 
   test("refuses before recording anything while a worker is unsettled", async () => {
@@ -301,9 +372,21 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
             }
             await act(worktree.worktreePath)
             const chunk = (text: string) =>
-              JSON.stringify({ kind: "session.update", payload: { update: { content: { text, type: "text" }, messageId: "m-final", sessionUpdate: "agent_message_chunk" } } })
-            await Bun.write(`${worktree.artifactDirectory}/acp.events.ndjson`, `${chunk(rationale.slice(0, 10))}\n${chunk(rationale.slice(10))}\n`)
-            return { goalId: input.goalId, outcomes: [{ detail: "done", state: "completed" as const, workerId }], schedulerId: "test" }
+              JSON.stringify({
+                kind: "session.update",
+                payload: {
+                  update: { content: { text, type: "text" }, messageId: "m-final", sessionUpdate: "agent_message_chunk" }
+                }
+              })
+            await Bun.write(
+              `${worktree.artifactDirectory}/acp.events.ndjson`,
+              `${chunk(rationale.slice(0, 10))}\n${chunk(rationale.slice(10))}\n`
+            )
+            return {
+              goalId: input.goalId,
+              outcomes: [{ detail: "done", state: "completed" as const, workerId }],
+              schedulerId: "test"
+            }
           })()
           return { alreadyRunning: false, completion, goalId: input.goalId, schedulerId: "test" }
         }
@@ -336,14 +419,22 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
       await Bun.write(join(worktreePath, "shared.txt"), "line one\nleft edit\nright edit\n")
     })
 
-    const result = await train(evidence, integrator).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+    const result = await train(evidence, integrator).resolve({
+      adapter: "claude",
+      branchClass: "feature",
+      integrationId: first.integrationId
+    })
 
     expect(evidence.starts.at(-1)?.resolvesIntegrationId).toBe(first.integrationId)
     expect(result.completion.status).toBe("validated")
     expect(result.completion.branch).toEndWith("/integration-a2")
     const [resolution] = result.completion.resolutions
     expect(resolution).toEqual(
-      expect.objectContaining({ conflictedWorkerId: right.id, paths: ["shared.txt"], rationale: "Kept both edits in order: left first, then right." })
+      expect.objectContaining({
+        conflictedWorkerId: right.id,
+        paths: ["shared.txt"],
+        rationale: "Kept both edits in order: left first, then right."
+      })
     )
     const git = new FactoryGit(result.completion.worktreePath)
     expect(await git.parents(resolution?.resolvedCommitSha ?? "")).toHaveLength(2)
@@ -357,7 +448,11 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     const { briefs, evidence, first, train } = await conflictingGoal("markers", ["true"])
     const { integrator } = integratorFor(briefs, async () => undefined)
 
-    const result = await train(evidence, integrator).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+    const result = await train(evidence, integrator).resolve({
+      adapter: "claude",
+      branchClass: "feature",
+      integrationId: first.integrationId
+    })
 
     expect(result.completion.status).toBe("conflicted")
     expect(result.completion.detail).toContain("Conflict markers remain in: shared.txt")
@@ -374,7 +469,11 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
       await Bun.write(join(worktreePath, "extra.txt"), "smuggled\n")
     })
 
-    const result = await train(evidence, integrator).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+    const result = await train(evidence, integrator).resolve({
+      adapter: "claude",
+      branchClass: "feature",
+      integrationId: first.integrationId
+    })
 
     expect(result.completion.status).toBe("conflicted")
     expect(result.completion.detail).toContain("outside its scope claim: changed .et/config.toml; added extra.txt")
@@ -386,10 +485,28 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     const { integrator } = integratorFor(briefs, async (worktreePath) => {
       await Bun.write(join(worktreePath, "shared.txt"), "line one\nboth\n")
       await runProcess(["git", "add", "--all"], worktreePath)
-      await runProcess(["git", "-c", "user.name=a", "-c", "user.email=a@a", "-c", "commit.gpgsign=false", "commit", "--quiet", "--no-edit"], worktreePath)
+      await runProcess(
+        [
+          "git",
+          "-c",
+          "user.name=a",
+          "-c",
+          "user.email=a@a",
+          "-c",
+          "commit.gpgsign=false",
+          "commit",
+          "--quiet",
+          "--no-edit"
+        ],
+        worktreePath
+      )
     })
 
-    const result = await train(evidence, integrator).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+    const result = await train(evidence, integrator).resolve({
+      adapter: "claude",
+      branchClass: "feature",
+      integrationId: first.integrationId
+    })
 
     expect(result.completion.status).toBe("conflicted")
     expect(result.completion.detail).toContain("changed the merge state")
@@ -397,13 +514,17 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
 
   test("resolve refuses an attempt that is not conflicted and a bridge without an integrator", async () => {
     const { evidence, first, train } = await conflictingGoal("refuse", ["true"])
-    await expect(train(evidence).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })).rejects.toThrow(
-      "No integrator agent"
-    )
+    await expect(
+      train(evidence).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+    ).rejects.toThrow("No integrator agent")
     evidence.completions.set(first.integrationId, { ...first.completion, status: "validation_failed" })
     const { integrator } = integratorFor(new Map(), async () => undefined)
     await expect(
-      train(evidence, integrator).resolve({ adapter: "claude", branchClass: "feature", integrationId: first.integrationId })
+      train(evidence, integrator).resolve({
+        adapter: "claude",
+        branchClass: "feature",
+        integrationId: first.integrationId
+      })
     ).rejects.toThrow("Only a conflicted integration")
   })
 
@@ -418,9 +539,16 @@ describe.skipIf(!sandboxAvailable)("integration train", () => {
     const evidence = new FakeEvidenceApi(fx.goal, [kept, dropped, dependent, integratorWorker])
     const train = fx.train(evidence)
 
-    await expect(train.run({ branchClass: "feature", excludeWorkerIds: [dropped.id], goalId: fx.goal.id })).rejects.toThrow("requires a selection rationale")
     await expect(
-      train.run({ branchClass: "feature", excludeWorkerIds: [dropped.id], goalId: fx.goal.id, selectionRationale: "Out of scope." })
+      train.run({ branchClass: "feature", excludeWorkerIds: [dropped.id], goalId: fx.goal.id })
+    ).rejects.toThrow("requires a selection rationale")
+    await expect(
+      train.run({
+        branchClass: "feature",
+        excludeWorkerIds: [dropped.id],
+        goalId: fx.goal.id,
+        selectionRationale: "Out of scope."
+      })
     ).rejects.toThrow("strands dependents")
 
     const result = await train.run({

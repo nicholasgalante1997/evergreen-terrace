@@ -19,11 +19,18 @@ import type { ConflictResolutionInput, ConflictResolutionOutcome } from "./confl
 
 export interface IntegrationTrainPorts {
   commandApi: {
-    completeIntegration(integrationId: string, input: IntegrationCompletionInput): Promise<CommandIntegrationCompletionResult>
+    completeIntegration(
+      integrationId: string,
+      input: IntegrationCompletionInput
+    ): Promise<CommandIntegrationCompletionResult>
     getGoal(goalId: string): Promise<CommandGoalSnapshot>
     getIntegration(integrationId: string): Promise<CommandIntegrationSnapshot>
     listGoalWorkers(goalId: string): Promise<CommandWorkerSnapshot[]>
     startIntegration(input: IntegrationStartInput): Promise<CommandIntegrationStartResult>
+  }
+  /** Optional: without it, scope claims are not enforced. */
+  plans?: {
+    launchedClaims(goalId: string): Promise<LaunchedPlanClaims | null>
   }
   /** Optional: without it, `resolve` is refused and conflicts are only recorded. */
   integrator?: {
@@ -55,4 +62,10 @@ export interface IntegrationRunResult {
   attempt: number
   completion: IntegrationCompletion
   integrationId: string
+}
+
+/** The scope claim of each worker an approved plan launched. */
+export interface LaunchedPlanClaims {
+  planId: string
+  workers: ReadonlyMap<string, { scope: readonly string[]; taskKey: string }>
 }

@@ -73,6 +73,35 @@ export class FactoryWorktreeManager {
     return record
   }
 
+  /**
+   * Recovery path for a launch interrupted after its worktree was created: the
+   * recorded worktree is reused only when it still matches the request exactly
+   * and is on its own branch. Anything else is refused, never repaired.
+   */
+  async prepareOrReuse(input: WorktreePreparation): Promise<FactoryWorktreeRecord> {
+    validatePreparation(input)
+    const policy = await loadProjectPolicy(this.projectRoot)
+    const paths = deriveWorktreePaths(this.factoryRoot, policy.project_id, input.goalId, input.role, input.attempt)
+    const manifest = Bun.file(paths.manifestPath)
+    if (!(await manifest.exists())) {
+      return this.prepare(input)
+    }
+    const record = (await manifest.json()) as FactoryWorktreeRecord
+    const branch = (await runProcess(["git", "branch", "--show-current"], record.worktreePath)).stdout.trim()
+    if (
+      record.goalId !== input.goalId ||
+      record.role !== input.role ||
+      record.attempt !== input.attempt ||
+      (input.baseSha !== undefined && record.baseSha !== input.baseSha) ||
+      branch !== record.branch
+    ) {
+      throw new Error(
+        `Existing worktree ${record.worktreePath} does not match the requested ${input.role} attempt ${input.attempt}`
+      )
+    }
+    return record
+  }
+
   async recordWorkerRegistrationFailure(record: FactoryWorktreeRecord, error: unknown): Promise<string> {
     const failurePath = `${dirname(record.manifestPath)}/worker-registration.failure.json`
     const failure: WorktreeRegistrationFailure = {
