@@ -4,7 +4,9 @@ title: Integrations
 
 # Integrations
 
-MCP wrappers for Jira, GitLab, and Figma. Each integration is a configuration guide in `integrations/` — the actual MCP servers are external packages.
+The legacy integration guides are archival only. Evergreen Terrace v1 owns its
+MCP protocol boundary and does not install external MCP servers. GitHub via
+`gh` is the only remote-code-host capability in v1.
 
 ## Jira
 
@@ -12,27 +14,8 @@ MCP wrappers for Jira, GitLab, and Figma. Each integration is a configuration gu
 
 Used by the PM agent to create, update, and query tickets without Nick touching Jira directly.
 
-### Setup
-
-Add to `.kiro/settings/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "jira": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-jira"],
-      "env": {
-        "JIRA_URL": "https://charter.atlassian.net",
-        "JIRA_EMAIL": "c-nicholas.galante@charter.com",
-        "JIRA_API_TOKEN": "<token>"
-      }
-    }
-  }
-}
-```
-
-Get an API token at `https://id.atlassian.com/manage-profile/security/api-tokens`.
+Jira is not part of v1. A future capability needs a first-party, governed host
+bridge tool and explicit credential and side-effect decisions.
 
 ### Available Tools
 
@@ -54,26 +37,9 @@ Labels:     evergreen-terrace, [project-name]
 
 Used by engineering agents to create MRs, check pipeline status, and query repository state.
 
-### Setup
-
-Add to `.kiro/settings/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
-      "env": {
-        "GITLAB_URL": "https://gitlab.spectrumflow.net",
-        "GITLAB_TOKEN": "<token>"
-      }
-    }
-  }
-}
-```
-
-Get a PAT with `api`, `read_repository`, `write_repository` scopes at `https://gitlab.spectrumflow.net/-/user_settings/personal_access_tokens`.
+GitLab is post-v1. A future capability needs a first-party, governed host bridge
+tool. The guide in `integrations/gitlab/` documents the desired domain
+operations only.
 
 ### Available Tools
 

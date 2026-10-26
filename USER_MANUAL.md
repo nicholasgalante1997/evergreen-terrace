@@ -1,5 +1,10 @@
 # evergreen-terrace — User Manual
 
+> **Legacy manual notice:** This manual describes the existing queue/conductor
+> workflow. The approved v1 engineering-factory contract is documented in
+> [`specs/evergreen-v1/OVERVIEW.md`](specs/evergreen-v1/OVERVIEW.md). V1 is
+> additive and must not inherit the legacy direct-CLI, shared-workspace lifecycle.
+
 This is the practical guide to using the system day to day. It covers what to do, in what order, and why each piece exists. For how anything is built, see the docsite (`docsite/`) or the technical docs in `.claude/`.
 
 ---

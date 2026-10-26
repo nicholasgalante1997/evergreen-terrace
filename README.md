@@ -2,6 +2,13 @@
 
 Personal engineering org for a one-person shop operating at principal scope.
 
+> **V1 architecture:** Evergreen Terrace is being rebuilt additively as a
+> local-first engineering factory with Compose-managed services, a host-side MCP
+> bridge, isolated worktrees, ACP workers, Kafka-backed events, and a full React
+> console. The approved contract is in
+> [`specs/evergreen-v1/`](specs/evergreen-v1/). The queue/conductor instructions
+> below describe the preserved legacy system, not the v1 execution path.
+
 The bottleneck isn't access or management — it's team support. evergreen-terrace provides the PM, design, and engineering team that doesn't otherwise exist. Role-scoped agents handle the work that would otherwise fall to a full team. A persistent work queue tracks everything. A momentum sentinel surfaces what's going stale before it becomes a problem.
 
 → **New here? Read the [User Manual](USER_MANUAL.md).**
@@ -50,6 +57,44 @@ cp .env.example .env
 
 `QUEUE_ROOT` is the only required env variable. It defaults to `process.cwd()` if unset, which works when running from the repo root.
 
+### V1 control-plane foundation
+
+The first v1 slice runs the command event path locally: Postgres command state →
+outbox → Apache Kafka → read projection. Copy `.env.example`, replace all
+`ET_*_PASSWORD` placeholders with unique local values, then run:
+
+```bash
+bun run factory:up
+bun run factory:status
+curl http://127.0.0.1:7410/readyz
+curl http://127.0.0.1:7440/readyz
+```
+
+`factory:down` stops the services without deleting volumes or evidence. See
+[`specs/evergreen-v1/ARCHITECTURE.md`](specs/evergreen-v1/ARCHITECTURE.md) for
+the boundaries and recovery model.
+
+### V1 host bridge
+
+The native host bridge owns local Git, `.et` policy, and harness-facing MCP
+transports. It deliberately runs outside Compose, so containers never receive
+your checkout, credential store, or harness authentication. Ensure the target
+repository has an approved `.et/config.toml`, then use either transport:
+
+```bash
+# Harness-spawned newline-delimited JSON-RPC over stdin/stdout.
+bun run bridge:stdio
+
+# Loopback HTTP MCP endpoint at http://127.0.0.1:7450/mcp.
+bun run bridge:http
+```
+
+The v0 bridge exposes workspace status, policy-gated durable goal submission,
+durable decision request/resolution, deterministic worktree preparation, and
+durable worker assignment/execution, and explicit remote synchronization. ACP
+permission requests follow the governed decision path; normal worktree-local
+one-time commands remain autonomous.
+
 ---
 
 ## Running
@@ -89,13 +134,13 @@ See `scripts/tunnel.sh` for setup.
 
 ## Service ports
 
-| Service | Port |
-|---------|------|
-| queue-server | 2727 |
+| Service       | Port |
+| ------------- | ---- |
+| queue-server  | 2727 |
 | web dashboard | 2728 |
-| metrics | 2729 |
-| sentinel | 2730 |
-| conductor | 2731 |
+| metrics       | 2729 |
+| sentinel      | 2730 |
+| conductor     | 2731 |
 
 ---
 
@@ -103,16 +148,16 @@ See `scripts/tunnel.sh` for setup.
 
 Eight role-scoped agents, registered globally in `~/.claude/agents/` and available in any Claude Code session:
 
-| Agent | Role |
-|-------|------|
-| `pm` | PRD generation, ticket authoring, backlog grooming |
-| `eng-senior` | Architecture decisions, PR review, ADR authoring |
-| `eng-mid` | Feature implementation from spec |
-| `eng-junior` | Boilerplate, tests, scaffolding |
-| `director` | Scope pressure, prioritization challenge |
-| `stakeholder` | Status updates, business language |
-| `voice` | Output rewrite in Nick's register |
-| `momentum-sentinel` | Cross-project health scoring |
+| Agent               | Role                                               |
+| ------------------- | -------------------------------------------------- |
+| `pm`                | PRD generation, ticket authoring, backlog grooming |
+| `eng-senior`        | Architecture decisions, PR review, ADR authoring   |
+| `eng-mid`           | Feature implementation from spec                   |
+| `eng-junior`        | Boilerplate, tests, scaffolding                    |
+| `director`          | Scope pressure, prioritization challenge           |
+| `stakeholder`       | Status updates, business language                  |
+| `voice`             | Output rewrite in Nick's register                  |
+| `momentum-sentinel` | Cross-project health scoring                       |
 
 Agents sync automatically to `~/.claude/agents/` via the PostToolUse hook in `.claude/settings.json` when you edit `agents/`, `skills/`, or `steering/`. Manual sync: `bun run sync-agents`.
 
