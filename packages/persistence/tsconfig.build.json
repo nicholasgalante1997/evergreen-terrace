@@ -1,0 +1,9 @@
+{
+  "extends": "@evergreen-terrace/config/typescript/bun.build.tsconfig.json",
+  "compilerOptions": {
+    "declarationDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
