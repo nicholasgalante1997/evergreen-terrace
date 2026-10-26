@@ -5,6 +5,9 @@ import {
   decisionResolvedProjectionPayloadSchema,
   goalSubmittedPayloadSchema,
   handoffUpdatedPayloadSchema,
+  onboardingUpdatedPayloadSchema,
+  planUpdatedPayloadSchema,
+  preferenceUpdatedPayloadSchema,
   integrationUpdatedPayloadSchema,
   validationCompletedPayloadSchema,
   workerAssignedPayloadSchema,
@@ -194,6 +197,57 @@ export class ProjectionRepository extends PostgresRepository {
           aggregate_sequence = EXCLUDED.aggregate_sequence, last_event_id = EXCLUDED.last_event_id,
           updated_at = EXCLUDED.updated_at
       WHERE evergreen_read.handoffs.aggregate_sequence < EXCLUDED.aggregate_sequence
+    `
+  }
+
+  async projectPlanUpdated(event: EventEnvelope): Promise<void> {
+    const { plan } = planUpdatedPayloadSchema.parse(event.payload)
+    await this.sql`
+      INSERT INTO evergreen_read.plans (
+        id, project_id, goal_id, status, state, aggregate_sequence, last_event_id, created_at, updated_at
+      )
+      VALUES (
+        ${plan.id}, ${plan.projectId}, ${plan.goalId}, ${plan.status}, ${JSON.stringify(plan)}::text::jsonb,
+        ${event.aggregate.sequence}, ${event.eventId}, ${event.occurredAt}, ${event.occurredAt}
+      )
+      ON CONFLICT (id) DO UPDATE
+      SET status = EXCLUDED.status, state = EXCLUDED.state, aggregate_sequence = EXCLUDED.aggregate_sequence,
+          last_event_id = EXCLUDED.last_event_id, updated_at = EXCLUDED.updated_at
+      WHERE evergreen_read.plans.aggregate_sequence < EXCLUDED.aggregate_sequence
+    `
+  }
+
+  async projectOnboardingUpdated(event: EventEnvelope): Promise<void> {
+    const { onboarding } = onboardingUpdatedPayloadSchema.parse(event.payload)
+    await this.sql`
+      INSERT INTO evergreen_read.onboardings (
+        id, project_id, status, state, aggregate_sequence, last_event_id, created_at, updated_at
+      )
+      VALUES (
+        ${onboarding.id}, ${onboarding.projectId}, ${onboarding.status}, ${JSON.stringify(onboarding)}::text::jsonb,
+        ${event.aggregate.sequence}, ${event.eventId}, ${event.occurredAt}, ${event.occurredAt}
+      )
+      ON CONFLICT (id) DO UPDATE
+      SET status = EXCLUDED.status, state = EXCLUDED.state, aggregate_sequence = EXCLUDED.aggregate_sequence,
+          last_event_id = EXCLUDED.last_event_id, updated_at = EXCLUDED.updated_at
+      WHERE evergreen_read.onboardings.aggregate_sequence < EXCLUDED.aggregate_sequence
+    `
+  }
+
+  async projectPreferenceUpdated(event: EventEnvelope): Promise<void> {
+    const { preference } = preferenceUpdatedPayloadSchema.parse(event.payload)
+    await this.sql`
+      INSERT INTO evergreen_read.preferences (
+        id, project_id, status, state, aggregate_sequence, last_event_id, created_at, updated_at
+      )
+      VALUES (
+        ${preference.id}, ${preference.projectId}, ${preference.status}, ${JSON.stringify(preference)}::text::jsonb,
+        ${event.aggregate.sequence}, ${event.eventId}, ${event.occurredAt}, ${event.occurredAt}
+      )
+      ON CONFLICT (id) DO UPDATE
+      SET status = EXCLUDED.status, state = EXCLUDED.state, aggregate_sequence = EXCLUDED.aggregate_sequence,
+          last_event_id = EXCLUDED.last_event_id, updated_at = EXCLUDED.updated_at
+      WHERE evergreen_read.preferences.aggregate_sequence < EXCLUDED.aggregate_sequence
     `
   }
 

@@ -57,6 +57,15 @@ export class ProjectionDatabase extends PostgresDatabase {
       if (inserted && event.eventType === "handoff.updated") {
         await projection.projectHandoffUpdated(event)
       }
+      if (inserted && event.eventType === "plan.updated") {
+        await projection.projectPlanUpdated(event)
+      }
+      if (inserted && event.eventType === "onboarding.updated") {
+        await projection.projectOnboardingUpdated(event)
+      }
+      if (inserted && event.eventType === "preference.updated") {
+        await projection.projectPreferenceUpdated(event)
+      }
       await projection.advanceFreshness(event)
       await projection.recordOffset(event, topic, partition, nextOffset)
     })
@@ -191,6 +200,43 @@ export class ProjectionDatabase extends PostgresDatabase {
 
       CREATE INDEX IF NOT EXISTS read_handoffs_project_idx
         ON evergreen_read.handoffs (project_id, updated_at DESC);
+
+      -- Plans, onboardings, and preferences keep their latest event payload whole; the console reads it as-is.
+      CREATE TABLE IF NOT EXISTS evergreen_read.plans (
+        id UUID PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        goal_id UUID NOT NULL,
+        status TEXT NOT NULL,
+        state JSONB NOT NULL,
+        aggregate_sequence INTEGER NOT NULL,
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS read_plans_project_idx ON evergreen_read.plans (project_id, updated_at DESC);
+
+      CREATE TABLE IF NOT EXISTS evergreen_read.onboardings (
+        id UUID PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        state JSONB NOT NULL,
+        aggregate_sequence INTEGER NOT NULL,
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS evergreen_read.preferences (
+        id UUID PRIMARY KEY,
+        project_id TEXT,
+        status TEXT NOT NULL,
+        state JSONB NOT NULL,
+        aggregate_sequence INTEGER NOT NULL,
+        last_event_id UUID NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL
+      );
 
       CREATE TABLE IF NOT EXISTS evergreen_read.projection_freshness (
         projection_name TEXT PRIMARY KEY, event_id UUID NOT NULL, occurred_at TIMESTAMPTZ NOT NULL,

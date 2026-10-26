@@ -2,9 +2,13 @@
 
 import { PostgresDatabase } from "@evergreen-terrace/persistence"
 import { DecisionReadRepository } from "./decision-read-repository"
+import { EventReadRepository } from "./event-read-repository"
+import type { ReadEvent } from "./event-read-repository.types"
 import { EvidenceReadRepository } from "./evidence-read-repository"
 import type { ReadHandoff, ReadIntegration, ReadValidation } from "./evidence-read-repository.types"
 import { GoalReadRepository } from "./goal-read-repository"
+import { PlanningReadRepository } from "./planning-read-repository"
+import type { ReadOnboarding, ReadPlan, ReadPreference } from "./planning-read-repository.types"
 import { ProjectionFreshnessRepository } from "./projection-freshness-repository"
 import { WorkerReadRepository } from "./worker-read-repository"
 import type { ReadGoal } from "./goal-read-repository.types"
@@ -44,6 +48,22 @@ export class ReadDatabase extends PostgresDatabase {
 
   async listIntegrations(projectId: string | null): Promise<ReadIntegration[]> {
     return new EvidenceReadRepository(this.sql).listIntegrations(projectId)
+  }
+
+  async listPlans(projectId: string | null, goalId: string | null): Promise<ReadPlan[]> {
+    return new PlanningReadRepository(this.sql).listPlans(projectId, goalId)
+  }
+
+  async listOnboardings(projectId: string | null): Promise<ReadOnboarding[]> {
+    return new PlanningReadRepository(this.sql).listOnboardings(projectId)
+  }
+
+  async listPreferences(projectId: string | null): Promise<ReadPreference[]> {
+    return new PlanningReadRepository(this.sql).listPreferences(projectId)
+  }
+
+  async listRecentEvents(limit: number): Promise<ReadEvent[]> {
+    return new EventReadRepository(this.sql).listRecent(limit)
   }
 
   async getConsoleFreshness(): Promise<ProjectionFreshness | null> {
