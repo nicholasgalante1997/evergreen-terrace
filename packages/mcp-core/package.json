@@ -1,0 +1,24 @@
+{
+  "name": "@evergreen-terrace/mcp-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun --sourcemap=linked && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@evergreen-terrace/config": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^5.7.3"
+  }
+}

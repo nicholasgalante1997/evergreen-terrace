@@ -1,18 +1,27 @@
 # evergreen-terrace
 
-Personal engineering org for a one-person shop. Provides the PM, engineering team, and momentum tracking that would otherwise require a full team. Agent-driven work queue with a GasTown-style parallel orchestrator.
+Personal engineering org for a one-person shop. The queue/conductor system below
+is preserved legacy behavior. New work follows the approved local-first factory
+contract in `specs/evergreen-v1/`; it must not extend the legacy shared-workspace
+or direct-CLI lifecycle.
+
+V1 uses a Compose control plane, a host-side capability bridge, isolated Git
+worktrees, durable command/event state, and governed MCP clients. The hard
+constraints are in `specs/evergreen-v1/OVERVIEW.md` and
+`specs/evergreen-v1/ARCHITECTURE.md`.
 
 ## Workspace Layout
 
 ```
 core/           Runtime apps — each must have a Bun.build() pipeline
 packages/       Shared libraries (@evergreen-terrace/common, @evergreen-terrace/config)
+services/       V1 independently deployable control-plane services
 internal/       Private build tooling (@evergreen-terrace/build-utils)
 agents/         Agent definitions — AGENT.md (instructions) + agent.json (config)
 skills/         Knowledge bases read into agent system prompts
 steering/       Global steering docs read by all agents
-specs/          Phase 4 specs (metrics, dashboard, sentinel, tauri, conductor)
-integrations/   Jira, GitLab, Figma MCP setup guides
+specs/          Legacy phase specs plus the approved v1 factory contract
+integrations/   Archived integration domain guides
 context/        Persistent state — project TOMLs, bead state, metrics, reports
 queue/          Work items — inbox/ (pending) and active/ (in-flight)
 docsite/        @bundt/dxdocs documentation site
@@ -27,6 +36,10 @@ docsite/        @bundt/dxdocs documentation site
 | metrics       | 2729 |
 | sentinel      | 2730 |
 | conductor     | 2731 |
+| v1 command API | 7410 |
+| v1 read API | 7440 |
+| v1 host bridge (HTTP MCP, native) | 7450 |
+| v1 console (native) | 7460 |
 
 ## Build Pipeline — Non-Negotiable
 
@@ -165,9 +178,12 @@ bun run sync-agents
 
 This is also triggered automatically via a `PostToolUse` hook in `.claude/settings.json` whenever a file in `agents/`, `skills/`, or `steering/` is written or edited. The assembled agent file = AGENT.md body + skill files + steering docs, with Claude Code frontmatter (`name`, `description`, `model`, `tools`, `permissionMode`).
 
-## Current Phase
+## Current direction
 
-See `PHASES.md`. Phases 1–3 complete. Phase 4 (metrics, dashboard views, Tauri, conductor) in progress. Specs at `specs/`.
+`PHASES.md` tracks the preserved legacy roadmap. The active factory direction is
+the v1 contract under `specs/evergreen-v1/`. Build it additively: all writer
+workers use factory-owned worktrees, protected branches remain immutable, and
+the active checkout is never modified by the factory.
 
 ## Steering Docs
 

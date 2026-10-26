@@ -1,0 +1,8 @@
+{
+  "name": "director",
+  "description": "Director-level challenge agent. Applies scope pressure, questions prioritization, and stress-tests decisions from a business and delivery perspective.",
+  "model": "claude-sonnet-4-6",
+  "tools": ["Read", "Grep", "Glob"],
+  "skills": [],
+  "steering": ["project-context", "architecture-principles"]
+}

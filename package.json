@@ -7,6 +7,7 @@
   "workspaces": [
     "core/*",
     "docsite",
+    "services/*",
     "packages/*",
     "internal/*"
   ],
@@ -31,6 +32,14 @@
     "sentinel": "bun run core/sentinel/dist/index.js",
     "conductor": "bun run core/conductor/dist/index.js",
     "dashboard": "bun run --cwd core/web dev",
+    "factory:up": "bun internal/recovery/src/cli.ts snapshot --reason pre-up --if-running && docker compose up --build -d",
+    "factory:snapshot": "bun internal/recovery/src/cli.ts",
+    "factory:down": "docker compose down",
+    "factory:status": "docker ps --filter label=com.docker.compose.project=evergreen-terrace --format 'table {{.Names}}\\t{{.Status}}'",
+    "factory:logs": "docker compose logs -f",
+    "bridge:stdio": "bun run services/host-bridge/dist/index.js --transport=stdio",
+    "bridge:http": "bun run services/host-bridge/dist/index.js --transport=http",
+    "console": "bun run services/console/dist/index.js",
     "sync-agents": "bun scripts/sync-agents.ts",
     "health": "for port in 2727 2729 2730 2731; do curl -s -o /dev/null -w \"$port: %{http_code}\\n\" http://localhost:$port/health; done"
   },

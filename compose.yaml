@@ -1,0 +1,177 @@
+name: evergreen-terrace
+
+x-service-build: &service-build
+  context: .
+  dockerfile: infra/docker/BunService.Dockerfile
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - evergreen
+  init: true
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: evergreen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${ET_POSTGRES_ADMIN_PASSWORD:?Set ET_POSTGRES_ADMIN_PASSWORD in .env}
+      POSTGRES_USER: evergreen_admin
+      ET_COMMAND_DATABASE: evergreen_command
+      ET_COMMAND_DATABASE_PASSWORD: ${ET_COMMAND_DATABASE_PASSWORD:?Set ET_COMMAND_DATABASE_PASSWORD in .env}
+      ET_COMMAND_DATABASE_USER: evergreen_command
+      ET_READ_DATABASE: evergreen_read
+      ET_PROJECTION_DATABASE_PASSWORD: ${ET_PROJECTION_DATABASE_PASSWORD:?Set ET_PROJECTION_DATABASE_PASSWORD in .env}
+      ET_PROJECTION_DATABASE_USER: evergreen_projection
+      ET_READ_API_DATABASE_PASSWORD: ${ET_READ_API_DATABASE_PASSWORD:?Set ET_READ_API_DATABASE_PASSWORD in .env}
+      ET_READ_API_DATABASE_USER: evergreen_read_api
+    volumes:
+      - evergreen-postgres:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evergreen_admin -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    networks:
+      - evergreen
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: evergreen-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_NODE_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    volumes:
+      - evergreen-kafka:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - evergreen
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    container_name: evergreen-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      [
+        "/bin/bash",
+        "-ec",
+        "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic evergreen.events.v1 --partitions 6 --replication-factor 1"
+      ]
+    networks:
+      - evergreen
+
+  command-api:
+    <<: *service-defaults
+    build: *service-build
+    container_name: evergreen-command-api
+    command: ["bun", "run", "services/command-api/dist/index.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ET_COMMAND_DATABASE_URL: postgresql://evergreen_command:${ET_COMMAND_DATABASE_PASSWORD:?Set ET_COMMAND_DATABASE_PASSWORD in .env}@postgres:5432/evergreen_command
+      PORT: 7410
+    ports:
+      - "127.0.0.1:7410:7410"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const response = await fetch('http://127.0.0.1:7410/readyz'); if (!response.ok) process.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  outbox-relay:
+    <<: *service-defaults
+    build: *service-build
+    container_name: evergreen-outbox-relay
+    command: ["bun", "run", "services/outbox-relay/dist/index.js"]
+    depends_on:
+      command-api:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      ET_COMMAND_DATABASE_URL: postgresql://evergreen_command:${ET_COMMAND_DATABASE_PASSWORD:?Set ET_COMMAND_DATABASE_PASSWORD in .env}@postgres:5432/evergreen_command
+      ET_KAFKA_BROKERS: kafka:9092
+      PORT: 7420
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const response = await fetch('http://127.0.0.1:7420/readyz'); if (!response.ok) process.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  projection:
+    <<: *service-defaults
+    build: *service-build
+    container_name: evergreen-projection
+    command: ["bun", "run", "services/projection/dist/index.js"]
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+      ET_KAFKA_BROKERS: kafka:9092
+      ET_READ_API_DATABASE_USER: evergreen_read_api
+      ET_READ_DATABASE_URL: postgresql://evergreen_projection:${ET_PROJECTION_DATABASE_PASSWORD:?Set ET_PROJECTION_DATABASE_PASSWORD in .env}@postgres:5432/evergreen_read
+      PORT: 7430
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const response = await fetch('http://127.0.0.1:7430/readyz'); if (!response.ok) process.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  read-api:
+    <<: *service-defaults
+    build: *service-build
+    container_name: evergreen-read-api
+    command: ["bun", "run", "services/read-api/dist/index.js"]
+    depends_on:
+      projection:
+        condition: service_healthy
+    environment:
+      ET_READ_DATABASE_URL: postgresql://evergreen_read_api:${ET_READ_API_DATABASE_PASSWORD:?Set ET_READ_API_DATABASE_PASSWORD in .env}@postgres:5432/evergreen_read
+      PORT: 7440
+    ports:
+      - "127.0.0.1:7440:7440"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const response = await fetch('http://127.0.0.1:7440/readyz'); if (!response.ok) process.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+networks:
+  evergreen:
+    name: evergreen-terrace
+
+volumes:
+  evergreen-kafka:
+    name: evergreen-kafka
+  evergreen-postgres:
+    name: evergreen-postgres

@@ -1,40 +1,14 @@
-# Jira Integration
+# Jira integration (archived)
 
-MCP wrapper for Jira. Used by the PM agent to create, update, and query tickets without Nick touching Jira directly.
+The legacy integration guide is intentionally inactive. Evergreen Terrace v1
+does not run external MCP server packages or expose unattended third-party
+credentials to workers. A future Jira capability must be a governed,
+first-party tool implemented behind the host bridge and the decision policy.
 
-## MCP Server
+## Previously proposed tools
 
-Uses the `@modelcontextprotocol/server-jira` package or the Atlassian-provided MCP server.
-
-### Configuration
-
-Add to your Kiro MCP settings (`.kiro/settings/mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "jira": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-jira"],
-      "env": {
-        "JIRA_URL": "https://charter.atlassian.net",
-        "JIRA_EMAIL": "c-nicholas.galante@charter.com",
-        "JIRA_API_TOKEN": "<your-api-token>"
-      }
-    }
-  }
-}
-```
-
-### Getting an API Token
-
-1. Go to https://id.atlassian.com/manage-profile/security/api-tokens
-2. Create a token named "kiro-evergreen-terrace"
-3. Store it in `.env` at the repo root as `JIRA_API_TOKEN`
-
-## Available Tools
-
-Once configured, agents have access to:
+The following domain operations are candidates for a future first-party
+integration:
 
 - `jira_create_issue` — Create a new ticket
 - `jira_update_issue` — Update an existing ticket
@@ -43,9 +17,10 @@ Once configured, agents have access to:
 - `jira_add_comment` — Add a comment
 - `jira_transition_issue` — Move ticket through workflow states
 
-## PM Agent Usage
+## Future usage constraints
 
-The PM agent uses Jira to:
+Any future Jira tool must use an explicit credential capability and record the
+external side effect before it runs. It may:
 
 1. **Create tickets from PRDs** — After producing a PRD, it creates Jira tickets for each work item
 2. **Query the backlog** — Reads open tickets to inform prioritization
@@ -58,15 +33,4 @@ Project: [JIRA_PROJECT_KEY from .env]
 Issue Type: Story (features), Bug (bugs), Task (ops/research)
 Priority: Highest (p0), High (p1), Medium (p2), Low (p3)
 Labels: evergreen-terrace, [project-name]
-```
-
-## Environment Variables
-
-Add to `.env`:
-
-```
-JIRA_URL=https://charter.atlassian.net
-JIRA_EMAIL=c-nicholas.galante@charter.com
-JIRA_API_TOKEN=
-JIRA_PROJECT_KEY=
 ```
