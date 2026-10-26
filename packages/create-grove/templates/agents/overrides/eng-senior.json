@@ -1,0 +1,8 @@
+{
+  "name": "eng-senior",
+  "description": "Senior engineer agent. Owns architecture decisions, PR review, ADR authoring, and technical design. Reads the codebase before writing anything.",
+  "model": "claude-opus-4-7",
+  "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
+  "skills": ["conventions"],
+  "steering": ["project-context", "architecture-principles", "code-style"]
+}

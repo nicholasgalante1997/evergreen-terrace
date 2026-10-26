@@ -1,0 +1,9 @@
+{
+  "extends": "@evergreen-terrace/config/typescript/bun.tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src", "build"],
+  "exclude": ["node_modules", "dist"]
+}

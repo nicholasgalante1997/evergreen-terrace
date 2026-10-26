@@ -1,0 +1,21 @@
+[project]
+name = "{{PROJECT_NAME}}"
+repo = "{{PROJECT_REPO}}"
+gitlab_url = ""
+description = "{{PROJECT_DESCRIPTION}}"
+
+[status]
+priority = "{{PROJECT_PRIORITY}}"
+phase = "active-feature"
+last_touched = "{{TODAY}}"
+health = "healthy"
+
+[open_work]
+jira_project = ""
+open_items = 0
+blocked = false
+blocker_note = ""
+
+[notes]
+context = ""
+next_action = ""

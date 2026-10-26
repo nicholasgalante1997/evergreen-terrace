@@ -1,0 +1,8 @@
+{
+  "name": "voice",
+  "description": "Human-readable transform agent. Rewrites AI-generated output in the user's natural register. Applied as a post-processing step on any external-facing content.",
+  "model": "claude-sonnet-4-6",
+  "tools": ["Read", "Grep", "Glob"],
+  "skills": ["voice"],
+  "steering": ["project-context"]
+}

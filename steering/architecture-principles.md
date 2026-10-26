@@ -12,7 +12,11 @@ Each module, agent, and service owns one lane. The PM agent doesn't touch code. 
 
 ## Persistence Over Ephemeral State
 
-Prefer Git-backed or file-backed state over in-memory state for anything that needs to survive a session restart. This is the Beads principle from Gastown — if an agent crashes, the next session picks up where it left off.
+Prefer a durable, inspectable source of truth over in-memory state for anything
+that must survive a session restart. Legacy systems may use Git-backed or
+file-backed state. Evergreen v1 uses transactional command state, immutable audit
+events, a durable outbox, and replayable projections. If an agent crashes, the
+next session observes and reconciles evidence rather than blindly replaying work.
 
 ## Explicit Over Implicit
 
@@ -28,5 +32,8 @@ Build the thing that's needed. Don't build the framework that could build the th
 
 ## Observability
 
-Services log what they do. The queue server logs every state transition. The sentinel logs its scoring rationale. Logs are structured (JSON) in production, human-readable in development.
+Services record what they do. V1 emits versioned domain events, retains command
+and artifact provenance, and exposes a projection freshness watermark. Logs are
+structured (JSON) in production and human-readable in development. Documentation,
+recovery evidence, and decision records are production artifacts.
 

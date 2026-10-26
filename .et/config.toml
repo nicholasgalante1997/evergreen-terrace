@@ -1,0 +1,40 @@
+version = 1
+project_id = "github.com/nicholasgalante1997/evergreen-terrace"
+canonical_remote = "origin"
+priority_classes = [
+  { name = "p0", weight = 100 },
+  { name = "p1", weight = 50 },
+  { name = "p2", weight = 20 },
+  { name = "p3", weight = 5 }
+]
+
+[goals]
+max_concurrent = 4
+
+[workers]
+default_per_goal = 3
+max_per_repository = 6
+
+[branches]
+protected = ["main", "dev"]
+allowed_base_refs = ["main", "dev"]
+classes = [
+  { name = "feature", prefix = "feature/" },
+  { name = "patch", prefix = "patch/" }
+]
+
+[validation]
+# Setup is the only phase with network access; checks run offline in the sandbox.
+setup = ["bun install --frozen-lockfile"]
+commands = ["bun run typecheck", "bun run test"]
+
+[risk]
+decision_required = [
+  "credential",
+  "dependency",
+  "destructive",
+  "external_side_effect",
+  "migration",
+  "release",
+  "security"
+]

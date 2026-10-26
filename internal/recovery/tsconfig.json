@@ -1,0 +1,5 @@
+{
+  "extends": "@evergreen-terrace/config/typescript/bun.tsconfig.json",
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
